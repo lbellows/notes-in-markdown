@@ -19,8 +19,10 @@ function TreeNode({
           className={`tree-item file ${isSelected ? 'selected' : ''}`}
           onClick={() => onSelect(node.path)}
           onDoubleClick={() => onOpenNote(node.path)}
+          title={node.path}
         >
-          {node.name}
+          <span className="tree-icon">M</span>
+          <span className="tree-text">{node.name}</span>
         </button>
       </li>
     );
@@ -34,6 +36,7 @@ function TreeNode({
           className="tree-expander"
           onClick={() => onToggleExpand(node.path)}
           aria-label={isExpanded ? 'Collapse folder' : 'Expand folder'}
+          title={isExpanded ? 'Collapse' : 'Expand'}
         >
           {isExpanded ? '▾' : '▸'}
         </button>
@@ -41,8 +44,10 @@ function TreeNode({
           type="button"
           className={`tree-item folder ${isSelected ? 'selected' : ''}`}
           onClick={() => onSelect(node.path)}
+          title={node.path}
         >
-          {node.name}
+          <span className="tree-icon">{isExpanded ? '▾' : '▸'}</span>
+          <span className="tree-text">{node.name}</span>
         </button>
       </div>
       {isExpanded && node.children?.length > 0 && (
@@ -64,6 +69,21 @@ function TreeNode({
   );
 }
 
+function IconButton({ label, icon, onClick, disabled = false }) {
+  return (
+    <button
+      type="button"
+      className="icon-btn"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+    >
+      {icon}
+    </button>
+  );
+}
+
 export default function TreeSidebar({
   tree,
   expandedPaths,
@@ -78,36 +98,30 @@ export default function TreeSidebar({
   onRefresh,
   selectedKind
 }) {
+  const isRoot = selectedPath === '__root__';
+
   return (
     <aside className="sidebar">
-      <div className="sidebar-header">Hierarchy</div>
-      <div className="sidebar-actions">
-        <button type="button" onClick={onCreateNote}>New Note</button>
-        <button type="button" onClick={onCreateFolder}>New Folder</button>
-        <button
-          type="button"
-          onClick={onRename}
-          disabled={!selectedPath || selectedPath === '__root__'}
-        >
-          Rename
-        </button>
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={!selectedPath || selectedPath === '__root__'}
-        >
-          Delete
-        </button>
-        <button type="button" onClick={onRefresh}>Refresh</button>
+      <div className="sidebar-header compact-header">
+        <span>EXPLORER</span>
+        <div className="sidebar-actions compact-actions">
+          <IconButton label="New Note" icon="＋M" onClick={onCreateNote} />
+          <IconButton label="New Folder" icon="＋F" onClick={onCreateFolder} />
+          <IconButton label="Rename" icon="✎" onClick={onRename} disabled={isRoot} />
+          <IconButton label="Delete" icon="🗑" onClick={onDelete} disabled={isRoot} />
+          <IconButton label="Refresh" icon="↻" onClick={onRefresh} />
+        </div>
       </div>
 
       <div className="sidebar-root-row">
         <button
           type="button"
-          className={`tree-item folder ${selectedPath === '__root__' ? 'selected' : ''}`}
+          className={`tree-item folder ${isRoot ? 'selected' : ''}`}
           onClick={() => onSelect('__root__')}
+          title="Notes root"
         >
-          Notes Root
+          <span className="tree-icon">⌂</span>
+          <span className="tree-text">Notes</span>
         </button>
       </div>
 
@@ -125,7 +139,7 @@ export default function TreeSidebar({
         ))}
       </ul>
 
-      <div className="sidebar-footer">Selected: {selectedKind || 'none'}</div>
+      <div className="sidebar-footer">{selectedKind || 'none'}</div>
     </aside>
   );
 }

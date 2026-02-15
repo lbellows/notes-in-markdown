@@ -4,6 +4,8 @@ import TabBar from './components/TabBar';
 import SettingsPanel from './components/SettingsPanel';
 import TrashPanel from './components/TrashPanel';
 import ConflictModal from './components/ConflictModal';
+import InputModal from './components/InputModal';
+import ConfirmModal from './components/ConfirmModal';
 import { createAutosaveScheduler } from './lib/autosave';
 import {
   parentDirectoryPath,
@@ -19,7 +21,8 @@ const RenderedEditor = React.lazy(() => import('./editors/RenderedEditor'));
 const DEFAULT_CONFIG = {
   autosaveEnabled: true,
   autosaveDelayMs: 800,
-  defaultMode: 'rendered'
+  defaultMode: 'rendered',
+  theme: 'dark'
 };
 
 function findNodeKind(nodes, targetPath) {
@@ -60,8 +63,11 @@ export default function App() {
   const [config, setConfig] = useState(DEFAULT_CONFIG);
   const [trashItems, setTrashItems] = useState([]);
   const [showTrash, setShowTrash] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [status, setStatus] = useState('Ready');
   const [conflict, setConflict] = useState(null);
+  const [inputDialog, setInputDialog] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   const docsRef = useRef(docs);
   const tabsRef = useRef(tabs);
@@ -85,6 +91,10 @@ export default function App() {
   useEffect(() => {
     configRef.current = config;
   }, [config]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = config.theme || 'dark';
+  }, [config.theme]);
 
   const showStatus = useCallback((message) => {
     setStatus(message);
@@ -285,7 +295,7 @@ export default function App() {
       }
 
       setTree(initialTree);
-      setConfig(initialConfig);
+      setConfig({ ...DEFAULT_CONFIG, ...initialConfig });
       setTrashItems(initialTrash);
       setExpandedPaths(initialSession.expandedPaths || []);
 
@@ -440,81 +450,136 @@ export default function App() {
         ? parentDirectoryPath(selectedPath)
         : selectedPath;
 
-  const handleCreateNote = async () => {
-    const title = window.prompt('New note title:', 'Untitled');
-    if (!title) {
-      return;
-    }
+  const closeTabNow = (targetPath) => {
+    autosaveSchedulerRef.current?.cancel(targetPath);
 
-    const result = await window.mdnote.createNote({
-      parentDir: parentForCreation,
-      title
+    setTabs((prev) => {
+      const idx = prev.indexOf(targetPath);
+      const next = prev.filter((tabPath) => tabPath !== targetPath);
+      if (targetPath === activePathRef.current) {
+        setActivePath(next[idx] || next[idx - 1] || null);
+      }
+      return next;
     });
 
-    if (parentForCreation && !expandedPaths.includes(parentForCreation)) {
-      setExpandedPaths((prev) => [...prev, parentForCreation]);
-    }
-
-    await refreshTree();
-    await openNote(result.path);
-  };
-
-  const handleCreateFolder = async () => {
-    const name = window.prompt('New folder name:', 'Folder');
-    if (!name) {
-      return;
-    }
-
-    const result = await window.mdnote.createFolder({
-      parentDir: parentForCreation,
-      name
+    setDocs((prev) => {
+      const next = { ...prev };
+      delete next[targetPath];
+      return next;
     });
-
-    if (parentForCreation && !expandedPaths.includes(parentForCreation)) {
-      setExpandedPaths((prev) => [...prev, parentForCreation]);
-    }
-
-    setExpandedPaths((prev) => [...new Set([...prev, result.path])]);
-    setSelectedPath(result.path);
-    await refreshTree();
   };
 
-  const handleRename = async () => {
+  const handleCreateNote = () => {
+    setInputDialog({
+      type: 'create-note',
+      title: 'Create Note',
+      label: 'Note name',
+      confirmLabel: 'Create',
+      initialValue: 'Untitled',
+      parentDir: parentForCreation
+    });
+  };
+
+  const handleCreateFolder = () => {
+    setInputDialog({
+      type: 'create-folder',
+      title: 'Create Folder',
+      label: 'Folder name',
+      confirmLabel: 'Create',
+      initialValue: 'Folder',
+      parentDir: parentForCreation
+    });
+  };
+
+  const handleRename = () => {
     if (!selectedPath || selectedPath === ROOT_SENTINEL) {
       return;
     }
 
     const currentName = selectedPath.split('/').pop() || selectedPath;
-    const nextName = window.prompt('Rename item:', currentName);
-    if (!nextName || nextName === currentName) {
+    setInputDialog({
+      type: 'rename',
+      title: 'Rename Item',
+      label: 'New name',
+      confirmLabel: 'Rename',
+      initialValue: currentName,
+      oldPath: selectedPath
+    });
+  };
+
+  const handleInputConfirm = async (rawValue) => {
+    if (!inputDialog) {
       return;
     }
 
-    const result = await window.mdnote.renamePath({
-      oldPath: selectedPath,
-      newName: nextName
-    });
+    const value = rawValue.trim();
+    if (!value) {
+      return;
+    }
 
-    remapPathInState(selectedPath, result.path);
-    setSelectedPath(result.path);
-    await refreshTree();
-    showStatus(`Renamed to ${result.path}`);
+    const dialog = inputDialog;
+    setInputDialog(null);
+
+    if (dialog.type === 'create-note') {
+      const result = await window.mdnote.createNote({
+        parentDir: dialog.parentDir,
+        title: value
+      });
+
+      if (dialog.parentDir && !expandedPaths.includes(dialog.parentDir)) {
+        setExpandedPaths((prev) => [...prev, dialog.parentDir]);
+      }
+
+      await refreshTree();
+      await openNote(result.path);
+      return;
+    }
+
+    if (dialog.type === 'create-folder') {
+      const result = await window.mdnote.createFolder({
+        parentDir: dialog.parentDir,
+        name: value
+      });
+
+      if (dialog.parentDir && !expandedPaths.includes(dialog.parentDir)) {
+        setExpandedPaths((prev) => [...prev, dialog.parentDir]);
+      }
+
+      setExpandedPaths((prev) => [...new Set([...prev, result.path])]);
+      setSelectedPath(result.path);
+      await refreshTree();
+      return;
+    }
+
+    if (dialog.type === 'rename') {
+      const result = await window.mdnote.renamePath({
+        oldPath: dialog.oldPath,
+        newName: value
+      });
+
+      remapPathInState(dialog.oldPath, result.path);
+      setSelectedPath(result.path);
+      await refreshTree();
+      showStatus(`Renamed to ${result.path}`);
+    }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!selectedPath || selectedPath === ROOT_SENTINEL) {
       return;
     }
 
-    const ok = window.confirm(`Move ${selectedPath} to trash?`);
-    if (!ok) {
-      return;
-    }
-
-    await window.mdnote.trashPath(selectedPath);
-    closePathFromState(selectedPath);
-    await Promise.all([refreshTree(), refreshTrash()]);
-    showStatus(`Moved ${selectedPath} to trash`);
+    setConfirmDialog({
+      title: 'Move to Trash',
+      message: `Move ${selectedPath} to trash?`,
+      confirmLabel: 'Move',
+      onConfirm: async () => {
+        await window.mdnote.trashPath(selectedPath);
+        closePathFromState(selectedPath);
+        await Promise.all([refreshTree(), refreshTrash()]);
+        showStatus(`Moved ${selectedPath} to trash`);
+      }
+    });
   };
 
   const handleRestore = async (trashPath) => {
@@ -538,28 +603,18 @@ export default function App() {
   const handleTabClose = (targetPath) => {
     const doc = docsRef.current[targetPath];
     if (doc?.dirty) {
-      const shouldClose = window.confirm('This note has unsaved changes. Close anyway?');
-      if (!shouldClose) {
-        return;
-      }
+      setConfirmDialog({
+        title: 'Unsaved Changes',
+        message: `Close ${targetPath.split('/').pop()} without saving?`,
+        confirmLabel: 'Close Tab',
+        onConfirm: async () => {
+          closeTabNow(targetPath);
+        }
+      });
+      return;
     }
 
-    autosaveSchedulerRef.current?.cancel(targetPath);
-
-    setTabs((prev) => {
-      const idx = prev.indexOf(targetPath);
-      const next = prev.filter((tabPath) => tabPath !== targetPath);
-      if (targetPath === activePathRef.current) {
-        setActivePath(next[idx] || next[idx - 1] || null);
-      }
-      return next;
-    });
-
-    setDocs((prev) => {
-      const next = { ...prev };
-      delete next[targetPath];
-      return next;
-    });
+    closeTabNow(targetPath);
   };
 
   const handleDocChange = (notePath, content) => {
@@ -653,6 +708,16 @@ export default function App() {
     showStatus(`Saved a copy to ${created.path}`);
   };
 
+  const handleConfirmAccept = async () => {
+    if (!confirmDialog?.onConfirm) {
+      return;
+    }
+
+    const action = confirmDialog.onConfirm;
+    setConfirmDialog(null);
+    await action();
+  };
+
   return (
     <div className="app-shell">
       <TreeSidebar
@@ -664,18 +729,10 @@ export default function App() {
         onOpenNote={(path) => {
           void openNote(path);
         }}
-        onCreateNote={() => {
-          void handleCreateNote();
-        }}
-        onCreateFolder={() => {
-          void handleCreateFolder();
-        }}
-        onRename={() => {
-          void handleRename();
-        }}
-        onDelete={() => {
-          void handleDelete();
-        }}
+        onCreateNote={handleCreateNote}
+        onCreateFolder={handleCreateFolder}
+        onRename={handleRename}
+        onDelete={handleDelete}
         onRefresh={() => {
           void refreshTree();
         }}
@@ -701,15 +758,13 @@ export default function App() {
           }}
           autosaveEnabled={config.autosaveEnabled}
           onToggleTrash={() => setShowTrash((prev) => !prev)}
+          settingsOpen={showSettings}
+          onToggleSettings={() => setShowSettings((prev) => !prev)}
         />
 
-        <div className="settings-row">
-          <SettingsPanel config={config} onConfigPatch={(patch) => {
-            void handleConfigPatch(patch);
-          }} />
-
+        <div className="toolbar-row">
           {activeDoc && (
-            <div className="mode-toggle">
+            <div className="mode-toggle compact-actions">
               <button
                 type="button"
                 onClick={() => handleModeToggle('rendered')}
@@ -725,6 +780,15 @@ export default function App() {
                 Source
               </button>
             </div>
+          )}
+          {showSettings && (
+            <SettingsPanel
+              config={config}
+              onConfigPatch={(patch) => {
+                void handleConfigPatch(patch);
+              }}
+              onClose={() => setShowSettings(false)}
+            />
           )}
         </div>
 
@@ -770,6 +834,22 @@ export default function App() {
         }}
         onSaveCopy={() => {
           void handleConflictSaveCopy();
+        }}
+      />
+
+      <InputModal
+        dialog={inputDialog}
+        onCancel={() => setInputDialog(null)}
+        onConfirm={(value) => {
+          void handleInputConfirm(value);
+        }}
+      />
+
+      <ConfirmModal
+        dialog={confirmDialog}
+        onCancel={() => setConfirmDialog(null)}
+        onConfirm={() => {
+          void handleConfirmAccept();
         }}
       />
     </div>

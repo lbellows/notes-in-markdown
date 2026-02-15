@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import App from '../../src/App';
 
 vi.mock('../../src/editors/SourceEditor', () => ({
@@ -61,8 +61,25 @@ function makeBridge(overrides = {}) {
 }
 
 describe('App integration', () => {
+  let bridge;
+
   beforeEach(() => {
-    window.mdnote = makeBridge();
+    bridge = makeBridge({
+      createNote: vi.fn().mockResolvedValue({ path: 'Untitled.md' }),
+      readNote: vi
+        .fn()
+        .mockResolvedValueOnce({
+          path: 'Welcome.md',
+          content: '# Welcome',
+          mtimeMs: 100
+        })
+        .mockResolvedValueOnce({
+          path: 'Untitled.md',
+          content: '# Untitled',
+          mtimeMs: 200
+        })
+    });
+    window.mdnote = bridge;
   });
 
   afterEach(() => {
@@ -72,20 +89,38 @@ describe('App integration', () => {
   it('renders initial shell and hierarchy after bootstrap', async () => {
     render(<App />);
 
-    expect(await screen.findByText('Hierarchy')).toBeTruthy();
-    expect(screen.getByText('Notes Root')).toBeTruthy();
-    expect(screen.getByText('Autosave: On')).toBeTruthy();
+    expect(await screen.findByText('EXPLORER')).toBeTruthy();
+    expect(screen.getByText('Notes')).toBeTruthy();
+    expect(screen.getByText('A:ON')).toBeTruthy();
     expect(screen.getByText('Open a markdown note from the sidebar.')).toBeTruthy();
   });
 
   it('opens a note into a tab and shows editor controls', async () => {
     render(<App />);
 
-    const noteButton = await screen.findByRole('button', { name: 'Welcome.md' });
+    const noteButton = await screen.findByRole('button', { name: /Welcome\.md/ });
     fireEvent.doubleClick(noteButton);
 
     expect(await screen.findByRole('button', { name: /Welcome\.md/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Rendered' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Source' })).toBeTruthy();
+  });
+
+  it('creates a note using the input modal workflow', async () => {
+    render(<App />);
+
+    const openCreate = await screen.findByRole('button', { name: 'New Note' });
+    fireEvent.click(openCreate);
+
+    const nameInput = await screen.findByLabelText('Note name');
+    fireEvent.change(nameInput, { target: { value: 'Meeting Notes' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }));
+
+    await waitFor(() => {
+      expect(bridge.createNote).toHaveBeenCalledWith({
+        parentDir: '',
+        title: 'Meeting Notes'
+      });
+    });
   });
 });

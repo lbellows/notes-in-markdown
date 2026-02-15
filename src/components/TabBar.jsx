@@ -1,5 +1,20 @@
 import React from 'react';
 
+function IconButton({ label, icon, onClick, disabled = false, active = false }) {
+  return (
+    <button
+      type="button"
+      className={`icon-btn ${active ? 'active' : ''}`}
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+    >
+      {icon}
+    </button>
+  );
+}
+
 export default function TabBar({
   tabs,
   activePath,
@@ -9,7 +24,9 @@ export default function TabBar({
   onSave,
   onSaveAll,
   autosaveEnabled,
-  onToggleTrash
+  onToggleTrash,
+  onToggleSettings,
+  settingsOpen
 }) {
   return (
     <div className="tab-shell">
@@ -22,11 +39,11 @@ export default function TabBar({
 
           return (
             <div key={tabPath} className={`tab ${isActive ? 'active' : ''}`}>
-              <button type="button" className="tab-select" onClick={() => onSelect(tabPath)}>
+              <button type="button" className="tab-select" onClick={() => onSelect(tabPath)} title={tabPath}>
                 {name}
-                {isDirty ? ' *' : ''}
+                {isDirty ? ' ●' : ''}
               </button>
-              <button type="button" className="tab-close" onClick={() => onClose(tabPath)}>
+              <button type="button" className="tab-close" onClick={() => onClose(tabPath)} aria-label={`Close ${name}`} title="Close tab">
                 ×
               </button>
             </div>
@@ -34,15 +51,17 @@ export default function TabBar({
         })}
       </div>
 
-      <div className="tab-actions">
-        <button type="button" onClick={onSave} disabled={!activePath}>
-          Save
-        </button>
-        <button type="button" onClick={onSaveAll} disabled={tabs.length === 0}>
-          Save All
-        </button>
-        <button type="button" onClick={onToggleTrash}>Trash</button>
-        <span className="autosave-pill">Autosave: {autosaveEnabled ? 'On' : 'Off'}</span>
+      <div className="tab-actions compact-actions">
+        <IconButton label="Save" icon="💾" onClick={onSave} disabled={!activePath} />
+        <IconButton label="Save All" icon="⟲" onClick={onSaveAll} disabled={tabs.length === 0} />
+        <IconButton label="Trash" icon="🗁" onClick={onToggleTrash} />
+        <IconButton
+          label="Settings"
+          icon="⚙"
+          onClick={onToggleSettings}
+          active={settingsOpen}
+        />
+        <span className="autosave-pill">A:{autosaveEnabled ? 'ON' : 'OFF'}</span>
       </div>
     </div>
   );
