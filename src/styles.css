@@ -361,6 +361,26 @@ button:disabled {
   height: 100%;
 }
 
+.editor-panel .cm-editor {
+  background: var(--bg-elev);
+  color: var(--text);
+}
+
+.editor-panel .cm-gutters {
+  background: var(--bg-elev);
+  border-right: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.editor-panel .cm-activeLine,
+.editor-panel .cm-activeLineGutter {
+  background: var(--bg-hover);
+}
+
+.editor-panel .cm-cursor {
+  border-left-color: var(--accent);
+}
+
 .rendered-shell {
   overflow: auto;
   padding: 0.6rem;

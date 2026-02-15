@@ -15,6 +15,7 @@
 - Unit + integration tests: `npm test`
 - E2E smoke tests: `npm run test:e2e` (uses `npx @playwright/test`, no local install required)
 - Full test suite: `npm run test:all`
+- Local environment note: skip Playwright e2e in space-constrained/offline environments because `npx @playwright/test` may download packages/browsers; prefer `npm test` locally and run e2e in CI.
 - Package artifacts:
   - Linux: `npm run package:linux`
   - Windows: `npm run package:win`
@@ -67,3 +68,4 @@
   - markdown conversion/sanitization helpers (`tests/markdown.test.js`)
 - Integration tests cover app bootstrap and note open flow (`tests/integration/app.integration.test.jsx`).
 - E2E smoke covers Electron boot and visible shell (`tests/e2e/smoke.spec.mjs`).
+- E2E may be intentionally skipped on constrained local machines; treat CI e2e as the source of truth when local Playwright download/runtime is unavailable.
