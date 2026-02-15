@@ -41,13 +41,15 @@ function makeBridge(overrides = {}) {
     restoreFromTrash: vi.fn(),
     getConfig: vi.fn().mockResolvedValue({
       autosaveEnabled: true,
-      autosaveDelayMs: 800,
-      defaultMode: 'rendered'
+      autosaveDelayMs: 1400,
+      defaultMode: 'rendered',
+      theme: 'dark'
     }),
     setConfig: vi.fn(async (patch) => ({
       autosaveEnabled: patch.autosaveEnabled ?? true,
-      autosaveDelayMs: patch.autosaveDelayMs ?? 800,
-      defaultMode: 'rendered'
+      autosaveDelayMs: patch.autosaveDelayMs ?? 1400,
+      defaultMode: 'rendered',
+      theme: patch.theme ?? 'dark'
     })),
     getSession: vi.fn().mockResolvedValue({
       openTabs: [],
@@ -89,9 +91,8 @@ describe('App integration', () => {
   it('renders initial shell and hierarchy after bootstrap', async () => {
     render(<App />);
 
-    expect(await screen.findByText('EXPLORER')).toBeTruthy();
-    expect(screen.getByText('Notes')).toBeTruthy();
-    expect(screen.getByText('A:ON')).toBeTruthy();
+    expect(await screen.findAllByText('/')).toHaveLength(2);
+    expect(screen.getByText('Auto: ON')).toBeTruthy();
     expect(screen.getByText('Open a markdown note from the sidebar.')).toBeTruthy();
   });
 
@@ -102,14 +103,14 @@ describe('App integration', () => {
     fireEvent.doubleClick(noteButton);
 
     expect(await screen.findByRole('button', { name: /Welcome\.md/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Rendered' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Markdown' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Source' })).toBeTruthy();
   });
 
   it('creates a note using the input modal workflow', async () => {
     render(<App />);
 
-    const openCreate = await screen.findByRole('button', { name: 'New Note' });
+    const openCreate = await screen.findByRole('button', { name: 'New note' });
     fireEvent.click(openCreate);
 
     const nameInput = await screen.findByLabelText('Note name');

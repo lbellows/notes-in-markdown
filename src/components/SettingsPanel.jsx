@@ -1,12 +1,19 @@
 import React from 'react';
+import Icon from './Icon';
 
 export default function SettingsPanel({ config, onConfigPatch, onClose }) {
   return (
     <div className="settings-popover">
       <div className="settings-title-row">
         <strong>Settings</strong>
-        <button type="button" className="icon-btn" onClick={onClose} aria-label="Close settings" title="Close">
-          ×
+        <button
+          type="button"
+          className="icon-btn"
+          onClick={onClose}
+          aria-label="Close settings"
+          title="Close settings"
+        >
+          <Icon name="close" size={12} />
         </button>
       </div>
 
@@ -23,13 +30,13 @@ export default function SettingsPanel({ config, onConfigPatch, onClose }) {
         <span>Delay (ms)</span>
         <input
           type="number"
-          min={200}
-          max={5000}
+          min={300}
+          max={6000}
           step={100}
           value={config.autosaveDelayMs}
           onChange={(event) =>
             onConfigPatch({
-              autosaveDelayMs: Number.parseInt(event.target.value, 10) || 800
+              autosaveDelayMs: Number.parseInt(event.target.value, 10) || 1400
             })
           }
           disabled={!config.autosaveEnabled}

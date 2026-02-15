@@ -20,7 +20,7 @@ const RenderedEditor = React.lazy(() => import('./editors/RenderedEditor'));
 
 const DEFAULT_CONFIG = {
   autosaveEnabled: true,
-  autosaveDelayMs: 800,
+  autosaveDelayMs: 1400,
   defaultMode: 'rendered',
   theme: 'dark'
 };
@@ -295,7 +295,12 @@ export default function App() {
       }
 
       setTree(initialTree);
-      setConfig({ ...DEFAULT_CONFIG, ...initialConfig });
+      const nextConfig = { ...DEFAULT_CONFIG, ...initialConfig };
+      if (nextConfig.autosaveDelayMs <= 800) {
+        nextConfig.autosaveDelayMs = 1400;
+        void window.mdnote.setConfig({ autosaveDelayMs: 1400 });
+      }
+      setConfig(nextConfig);
       setTrashItems(initialTrash);
       setExpandedPaths(initialSession.expandedPaths || []);
 
@@ -308,7 +313,7 @@ export default function App() {
           loadedDocs[tabPath] = {
             path: tabPath,
             content: loaded.content,
-            mode: initialConfig.defaultMode,
+            mode: nextConfig.defaultMode,
             dirty: false,
             baseMtimeMs: loaded.mtimeMs,
             lastSavedAt: loaded.mtimeMs
@@ -434,6 +439,13 @@ export default function App() {
     }
     return findNodeKind(tree, selectedPath);
   }, [tree, selectedPath]);
+
+  const selectedPathDisplay = useMemo(() => {
+    if (!selectedPath || selectedPath === ROOT_SENTINEL) {
+      return '/';
+    }
+    return `/${selectedPath}`;
+  }, [selectedPath]);
 
   const handleToggleExpand = (targetPath) => {
     setExpandedPaths((prev) =>
@@ -648,7 +660,7 @@ export default function App() {
 
   const handleConfigPatch = async (patch) => {
     const nextConfig = await window.mdnote.setConfig(patch);
-    setConfig(nextConfig);
+    setConfig({ ...DEFAULT_CONFIG, ...nextConfig });
 
     if (!nextConfig.autosaveEnabled) {
       autosaveSchedulerRef.current?.cancelAll();
@@ -736,7 +748,7 @@ export default function App() {
         onRefresh={() => {
           void refreshTree();
         }}
-        selectedKind={selectedKind}
+        selectedPathDisplay={selectedPathDisplay}
       />
 
       <main className="main-pane">
@@ -760,27 +772,11 @@ export default function App() {
           onToggleTrash={() => setShowTrash((prev) => !prev)}
           settingsOpen={showSettings}
           onToggleSettings={() => setShowSettings((prev) => !prev)}
+          activeMode={activeDoc?.mode}
+          onModeChange={handleModeToggle}
         />
 
-        <div className="toolbar-row">
-          {activeDoc && (
-            <div className="mode-toggle compact-actions">
-              <button
-                type="button"
-                onClick={() => handleModeToggle('rendered')}
-                className={activeDoc.mode === 'rendered' ? 'active' : ''}
-              >
-                Rendered
-              </button>
-              <button
-                type="button"
-                onClick={() => handleModeToggle('source')}
-                className={activeDoc.mode === 'source' ? 'active' : ''}
-              >
-                Source
-              </button>
-            </div>
-          )}
+        <div className="settings-flyout-row">
           {showSettings && (
             <SettingsPanel
               config={config}

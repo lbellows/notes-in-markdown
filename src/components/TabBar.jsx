@@ -1,4 +1,5 @@
 import React from 'react';
+import Icon from './Icon';
 
 function IconButton({ label, icon, onClick, disabled = false, active = false }) {
   return (
@@ -10,7 +11,7 @@ function IconButton({ label, icon, onClick, disabled = false, active = false }) 
       aria-label={label}
       title={label}
     >
-      {icon}
+      <Icon name={icon} size={13} />
     </button>
   );
 }
@@ -26,7 +27,9 @@ export default function TabBar({
   autosaveEnabled,
   onToggleTrash,
   onToggleSettings,
-  settingsOpen
+  settingsOpen,
+  activeMode,
+  onModeChange
 }) {
   return (
     <div className="tab-shell">
@@ -43,8 +46,14 @@ export default function TabBar({
                 {name}
                 {isDirty ? ' ●' : ''}
               </button>
-              <button type="button" className="tab-close" onClick={() => onClose(tabPath)} aria-label={`Close ${name}`} title="Close tab">
-                ×
+              <button
+                type="button"
+                className="tab-close"
+                onClick={() => onClose(tabPath)}
+                aria-label={`Close ${name}`}
+                title="Close tab"
+              >
+                <Icon name="close" size={12} />
               </button>
             </div>
           );
@@ -52,16 +61,43 @@ export default function TabBar({
       </div>
 
       <div className="tab-actions compact-actions">
-        <IconButton label="Save" icon="💾" onClick={onSave} disabled={!activePath} />
-        <IconButton label="Save All" icon="⟲" onClick={onSaveAll} disabled={tabs.length === 0} />
-        <IconButton label="Trash" icon="🗁" onClick={onToggleTrash} />
+        <IconButton label="Save" icon="save" onClick={onSave} disabled={!activePath} />
+        <IconButton label="Save all" icon="saveAll" onClick={onSaveAll} disabled={tabs.length === 0} />
+        <IconButton label="Trash" icon="folder" onClick={onToggleTrash} />
         <IconButton
           label="Settings"
-          icon="⚙"
+          icon="settings"
           onClick={onToggleSettings}
           active={settingsOpen}
         />
-        <span className="autosave-pill">A:{autosaveEnabled ? 'ON' : 'OFF'}</span>
+
+        {activePath && (
+          <div className="mode-toggle compact-actions inline-modes">
+            <button
+              type="button"
+              onClick={() => onModeChange('rendered')}
+              className={activeMode === 'rendered' ? 'active' : ''}
+              title="Markdown view"
+            >
+              Markdown
+            </button>
+            <button
+              type="button"
+              onClick={() => onModeChange('source')}
+              className={activeMode === 'source' ? 'active' : ''}
+              title="Source view"
+            >
+              Source
+            </button>
+          </div>
+        )}
+
+        <span
+          className="autosave-pill"
+          title={autosaveEnabled ? 'Autosave is enabled' : 'Autosave is disabled'}
+        >
+          Auto: {autosaveEnabled ? 'ON' : 'OFF'}
+        </span>
       </div>
     </div>
   );

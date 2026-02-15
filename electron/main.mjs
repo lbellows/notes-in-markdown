@@ -18,7 +18,7 @@ const SESSION_PATH = path.join(APP_ROOT, 'session.json');
 
 const DEFAULT_CONFIG = {
   autosaveEnabled: true,
-  autosaveDelayMs: 800,
+  autosaveDelayMs: 1400,
   defaultMode: 'rendered',
   theme: 'dark'
 };
