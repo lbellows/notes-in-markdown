@@ -17,7 +17,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "npm run build && npx @playwright/test@latest test",
+    "test:e2e": "npm run build && playwright test",
     "test:e2e:ci": "xvfb-run -a npm run test:e2e",
     "test:all": "npm run test && npm run test:e2e",
     "package:linux": "npm run build && npx electron-builder@latest --linux AppImage deb --publish never",
