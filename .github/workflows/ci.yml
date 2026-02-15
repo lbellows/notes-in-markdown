@@ -37,8 +37,25 @@ jobs:
       - name: Run production build
         run: npm run build
 
-      - name: Install xvfb
-        run: sudo apt-get update && sudo apt-get install -y xvfb
+      - name: Install Linux runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            xvfb \
+            libgtk-3-0 \
+            libnss3 \
+            libxss1 \
+            libxtst6 \
+            libx11-xcb1 \
+            libxkbcommon0 \
+            libxkbfile1 \
+            libsecret-1-0 \
+            libgbm1 \
+            libnotify4 \
+            libatspi2.0-0
+          sudo apt-get install -y libasound2 || sudo apt-get install -y libasound2t64
 
       - name: Run Electron smoke e2e tests
+        env:
+          DEBUG: pw:browser*
         run: npm run test:e2e:ci
