@@ -12,7 +12,13 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "npm run build && npx @playwright/test@1.54.2 test",
+    "test:e2e:ci": "xvfb-run -a npm run test:e2e",
+    "test:all": "npm run test && npm run test:e2e",
+    "package:linux": "npm run build && npx electron-builder@24.13.3 --linux AppImage deb --publish never",
+    "package:win": "npm run build && npx electron-builder@24.13.3 --win nsis --publish never",
+    "package:mac": "npm run build && npx electron-builder@24.13.3 --mac dmg zip --publish never"
   },
   "dependencies": {
     "@codemirror/lang-markdown": "^6.3.0",
@@ -34,5 +40,45 @@
     "vite": "^5.4.19",
     "vitest": "^2.1.9",
     "wait-on": "^8.0.3"
+  },
+  "build": {
+    "appId": "com.mdnoteapp.desktop",
+    "productName": "Markdown Note App",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "shared/**/*",
+      "package.json"
+    ],
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.productivity"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "releaseType": "release"
+      }
+    ]
   }
 }

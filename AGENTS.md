@@ -12,7 +12,13 @@
 - Dev mode (renderer dev server + electron): `npm run dev`
 - Production start (always rebuilds renderer): `npm start`
 - Faster production start (skip rebuild): `npm run start:fast`
-- Tests: `npm test`
+- Unit + integration tests: `npm test`
+- E2E smoke tests: `npm run test:e2e` (uses `npx @playwright/test`, no local install required)
+- Full test suite: `npm run test:all`
+- Package artifacts:
+  - Linux: `npm run package:linux`
+  - Windows: `npm run package:win`
+  - macOS: `npm run package:mac`
 
 ## Storage and Data
 - Root storage: `~/.mdnoteapp/`
@@ -25,6 +31,7 @@
 - Vite must use relative asset paths for Electron `file://` runtime.
   - This is fixed by `base: './'` in `vite.config.mjs`.
   - If you see a blank off-white window with only native menu, check built `dist/index.html` for `./assets/...` (not `/assets/...`).
+- CSP is defined in `index.html` via a meta tag and should remain strict in production.
 - Sandbox + preload compatibility:
   - Renderer sandbox is intentionally enabled (`sandbox: true`).
   - Preload stays CommonJS (`electron/preload.js`) because sandboxed preload does not support ESM `import` in this app setup.
@@ -39,8 +46,12 @@
 - Verified after fix:
   - Electron starts without preload module errors.
   - No renderer crash from missing `window.mdnote` methods.
-- Remaining non-blocking warning:
-  - Electron CSP warning in unpackaged/dev context (`Insecure Content-Security-Policy`).
+- Added hardening/completeness items:
+  - CSP policy meta tag in `index.html`.
+  - Vite `manualChunks` split for improved startup payload characteristics.
+  - Integration tests (`tests/integration/app.integration.test.jsx`).
+  - Playwright Electron e2e smoke test (`tests/e2e/smoke.spec.mjs`).
+  - GitHub Actions CI and release workflows in `.github/workflows/`.
 
 ## Debug Checklist
 1. Build renderer: `npm run build`
@@ -50,13 +61,9 @@
 5. Then look for renderer TypeErrors around `window.mdnote`
 
 ## Test Status
-- Unit tests currently cover:
+- Unit tests cover:
   - path helpers (`tests/pathing.test.js`)
   - autosave scheduler (`tests/autosave.test.js`)
   - markdown conversion/sanitization helpers (`tests/markdown.test.js`)
-- Current expected result: all tests passing (`8 passed`).
-
-## Suggested Next Engineering Tasks
-- Add end-to-end smoke test for Electron boot + preload bridge availability.
-- Add explicit CSP policy suitable for packaged app.
-- Split large renderer chunk (`manualChunks`) to reduce startup bundle size.
+- Integration tests cover app bootstrap and note open flow (`tests/integration/app.integration.test.jsx`).
+- E2E smoke covers Electron boot and visible shell (`tests/e2e/smoke.spec.mjs`).

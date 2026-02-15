@@ -1,11 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import TreeSidebar from './components/TreeSidebar';
 import TabBar from './components/TabBar';
 import SettingsPanel from './components/SettingsPanel';
 import TrashPanel from './components/TrashPanel';
 import ConflictModal from './components/ConflictModal';
-import SourceEditor from './editors/SourceEditor';
-import RenderedEditor from './editors/RenderedEditor';
 import { createAutosaveScheduler } from './lib/autosave';
 import {
   parentDirectoryPath,
@@ -15,6 +13,8 @@ import {
 import { normalizeMarkdownLineEndings } from './lib/markdown';
 
 const ROOT_SENTINEL = '__root__';
+const SourceEditor = React.lazy(() => import('./editors/SourceEditor'));
+const RenderedEditor = React.lazy(() => import('./editors/RenderedEditor'));
 
 const DEFAULT_CONFIG = {
   autosaveEnabled: true,
@@ -730,17 +730,21 @@ export default function App() {
 
         <section className="editor-area">
           {!activeDoc && <div className="empty-state">Open a markdown note from the sidebar.</div>}
-          {activeDoc && activeDoc.mode === 'source' && (
-            <SourceEditor
-              value={activeDoc.content}
-              onChange={(content) => handleDocChange(activePath, content)}
-            />
-          )}
-          {activeDoc && activeDoc.mode === 'rendered' && (
-            <RenderedEditor
-              markdown={activeDoc.content}
-              onChange={(content) => handleDocChange(activePath, content)}
-            />
+          {activeDoc && (
+            <Suspense fallback={<div className="empty-state">Loading editor...</div>}>
+              {activeDoc.mode === 'source' && (
+                <SourceEditor
+                  value={activeDoc.content}
+                  onChange={(content) => handleDocChange(activePath, content)}
+                />
+              )}
+              {activeDoc.mode === 'rendered' && (
+                <RenderedEditor
+                  markdown={activeDoc.content}
+                  onChange={(content) => handleDocChange(activePath, content)}
+                />
+              )}
+            </Suspense>
           )}
         </section>
 
