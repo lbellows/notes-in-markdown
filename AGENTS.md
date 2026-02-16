@@ -22,11 +22,11 @@
   - macOS: `npm run package:mac`
 
 ## Storage and Data
-- Root storage: `~/.mdnoteapp/`
-- Notes tree: `~/.mdnoteapp/notes/`
-- Trash: `~/.mdnoteapp/.trash/`
-- Config: `~/.mdnoteapp/config.json`
-- Session: `~/.mdnoteapp/session.json`
+- Root storage: `~/.nim/`
+- Notes tree: `~/.nim/notes/`
+- Trash: `~/.nim/.trash/`
+- Config: `~/.nim/config.json`
+- Session: `~/.nim/session.json`
 
 ## Critical Gotchas
 - Vite must use relative asset paths for Electron `file://` runtime.

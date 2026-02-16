@@ -2,12 +2,16 @@
 
 Desktop markdown note-taking app (Electron + React) with:
 
-- Filesystem-backed hierarchy at `~/.mdnoteapp/notes`
+- Filesystem-backed hierarchy at `~/.nim/notes`
 - Folder tree + tabbed documents
 - Editable `Rendered` and `Source` modes
 - Toggleable autosave
 - Local conflict handling for external file edits
-- Soft delete to `~/.mdnoteapp/.trash` with restore
+- Soft delete to `~/.nim/.trash` with restore
+
+## Screenshot
+
+![Markdown Note App](notes-in-markdown.png)
 
 ## Requirements
 
@@ -35,10 +39,10 @@ npm start
 
 ## Storage layout
 
-- `~/.mdnoteapp/notes/` markdown notes and folders
-- `~/.mdnoteapp/.trash/` soft-deleted files/folders
-- `~/.mdnoteapp/config.json` app settings
-- `~/.mdnoteapp/session.json` open tabs/expanded folders
+- `~/.nim/notes/` markdown notes and folders
+- `~/.nim/.trash/` soft-deleted files/folders
+- `~/.nim/config.json` app settings
+- `~/.nim/session.json` open tabs/expanded folders
 
 ## Tests
 

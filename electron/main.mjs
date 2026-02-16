@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const APP_ICON_PATH = path.join(__dirname, 'assets', 'icon.png');
 
-const APP_ROOT = path.join(os.homedir(), '.mdnoteapp');
+const APP_ROOT = path.join(os.homedir(), '.nim');
 const NOTES_ROOT = path.join(APP_ROOT, 'notes');
 const TRASH_ROOT = path.join(APP_ROOT, '.trash');
 const CONFIG_PATH = path.join(APP_ROOT, 'config.json');
