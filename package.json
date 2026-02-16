@@ -65,7 +65,8 @@
         "deb"
       ],
       "maintainer": "me@lbellows.com",
-      "category": "Utility"
+      "category": "Utility",
+      "icon": "electron/assets/icon.png"
     },
     "win": {
       "target": [
@@ -82,7 +83,8 @@
           ]
         }
       ],
-      "artifactName": "${productName}-${version}-win-${arch}.${ext}"
+      "artifactName": "${productName}-${version}-win-${arch}.${ext}",
+      "icon": "electron/assets/icon.ico"
     },
     "portable": {
       "artifactName": "${productName}-${version}-win-${arch}-portable.${ext}"
@@ -92,7 +94,8 @@
         "dmg",
         "zip"
       ],
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "icon": "electron/assets/icon.png"
     },
     "publish": [
       {

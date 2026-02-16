@@ -16,6 +16,7 @@ const IPC = {
   CONFIG_SET: 'config:set',
   SESSION_GET: 'session:get',
   SESSION_SET: 'session:set',
+  APP_OPEN_DEVTOOLS: 'app:openDevTools',
   TREE_EVENT: 'tree:event'
 };
 
@@ -33,6 +34,7 @@ contextBridge.exposeInMainWorld('mdnote', {
   setConfig: (patch) => ipcRenderer.invoke(IPC.CONFIG_SET, patch),
   getSession: () => ipcRenderer.invoke(IPC.SESSION_GET),
   setSession: (patch) => ipcRenderer.invoke(IPC.SESSION_SET, patch),
+  openDevTools: () => ipcRenderer.invoke(IPC.APP_OPEN_DEVTOOLS),
   onTreeEvent: (cb) => {
     const handler = (_event, payload) => cb(payload);
     ipcRenderer.on(IPC.TREE_EVENT, handler);

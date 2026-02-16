@@ -12,5 +12,6 @@ export const IPC = {
   CONFIG_SET: 'config:set',
   SESSION_GET: 'session:get',
   SESSION_SET: 'session:set',
+  APP_OPEN_DEVTOOLS: 'app:openDevTools',
   TREE_EVENT: 'tree:event'
 };

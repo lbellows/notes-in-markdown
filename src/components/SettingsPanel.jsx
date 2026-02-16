@@ -1,7 +1,7 @@
 import React from 'react';
 import Icon from './Icon';
 
-export default function SettingsPanel({ config, onConfigPatch, onClose }) {
+export default function SettingsPanel({ config, onConfigPatch, onOpenDevTools, onClose }) {
   return (
     <div className="settings-popover">
       <div className="settings-title-row">
@@ -61,6 +61,13 @@ export default function SettingsPanel({ config, onConfigPatch, onClose }) {
             Light
           </button>
         </div>
+      </div>
+
+      <div className="settings-devtools">
+        <span>Developer</span>
+        <button type="button" className="settings-action-btn" onClick={() => onOpenDevTools?.()}>
+          Open DevTools
+        </button>
       </div>
     </div>
   );

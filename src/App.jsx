@@ -667,6 +667,15 @@ export default function App() {
     }
   };
 
+  const handleOpenDevTools = async () => {
+    try {
+      await window.mdnote.openDevTools();
+      showStatus('Developer tools opened');
+    } catch {
+      showStatus('Unable to open developer tools');
+    }
+  };
+
   const handleConflictReload = () => {
     if (!conflict) {
       return;
@@ -782,6 +791,9 @@ export default function App() {
               config={config}
               onConfigPatch={(patch) => {
                 void handleConfigPatch(patch);
+              }}
+              onOpenDevTools={() => {
+                void handleOpenDevTools();
               }}
               onClose={() => setShowSettings(false)}
             />

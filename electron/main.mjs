@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, nativeImage } from 'electron';
 import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs/promises';
@@ -9,6 +9,7 @@ import { IPC } from '../shared/ipc.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const APP_ICON_PATH = path.join(__dirname, 'assets', 'icon.png');
 
 const APP_ROOT = path.join(os.homedir(), '.mdnoteapp');
 const NOTES_ROOT = path.join(APP_ROOT, 'notes');
@@ -31,6 +32,8 @@ const DEFAULT_SESSION = {
 
 let mainWindow;
 let notesWatcher;
+
+app.setName('Markdown Note App');
 
 function normalizeRel(input = '') {
   return input.replaceAll('\\', '/').replace(/^\/+/, '');
@@ -386,12 +389,18 @@ function stopWatcher() {
   }
 }
 
+function hideApplicationMenu() {
+  Menu.setApplicationMenu(null);
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1300,
     height: 850,
     minWidth: 1024,
     minHeight: 700,
+    icon: APP_ICON_PATH,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -399,6 +408,11 @@ function createWindow() {
       sandbox: true
     }
   });
+
+  if (process.platform !== 'darwin') {
+    mainWindow.setMenuBarVisibility(false);
+    mainWindow.removeMenu();
+  }
 
   const devUrl = process.env.VITE_DEV_SERVER_URL;
   if (devUrl) {
@@ -445,9 +459,32 @@ ipcMain.handle(IPC.SESSION_SET, async (_event, patch) => {
   await writeJson(SESSION_PATH, nextSession);
   return nextSession;
 });
+ipcMain.handle(IPC.APP_OPEN_DEVTOOLS, (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win || win.isDestroyed()) {
+    return { opened: false };
+  }
+
+  if (win.webContents.isDevToolsOpened()) {
+    win.focus();
+    return { opened: true, alreadyOpen: true };
+  }
+
+  win.webContents.openDevTools({ mode: 'detach', activate: true });
+  return { opened: true, alreadyOpen: false };
+});
 
 app.whenReady().then(async () => {
   await ensureAppStorage();
+  hideApplicationMenu();
+
+  if (process.platform === 'darwin' && app.dock) {
+    const dockIcon = nativeImage.createFromPath(APP_ICON_PATH);
+    if (!dockIcon.isEmpty()) {
+      app.dock.setIcon(dockIcon);
+    }
+  }
+
   createWindow();
   startWatcher();
 
