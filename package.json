@@ -1,6 +1,6 @@
 {
   "name": "markdown-note-app",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "Cross-platform markdown note app with hierarchy, tabs, and local autosave.",
   "author": {
     "name": "lbellows",
