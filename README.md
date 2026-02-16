@@ -1,4 +1,4 @@
-# Markdown Note App
+# Notes in Markdown
 
 Desktop markdown note-taking app (Electron + React) with:
 

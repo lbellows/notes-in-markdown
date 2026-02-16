@@ -1,7 +1,7 @@
 {
-  "name": "markdown-note-app",
-  "version": "0.2.0",
-  "description": "Cross-platform markdown note app with hierarchy, tabs, and local autosave.",
+  "name": "notes-in-markdown",
+  "version": "0.2.1",
+  "description": "Cross-platform markdown notes with hierarchy, tabs, and local autosave.",
   "author": {
     "name": "lbellows",
     "email": "me@lbellows.com"
@@ -47,7 +47,7 @@
   },
   "build": {
     "appId": "com.mdnoteapp.desktop",
-    "productName": "Markdown Note App",
+    "productName": "Notes in Markdown",
     "asar": true,
     "directories": {
       "output": "release"

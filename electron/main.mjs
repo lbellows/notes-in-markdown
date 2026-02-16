@@ -33,7 +33,7 @@ const DEFAULT_SESSION = {
 let mainWindow;
 let notesWatcher;
 
-app.setName('Markdown Note App');
+app.setName('Notes in Markdown');
 
 function normalizeRel(input = '') {
   return input.replaceAll('\\', '/').replace(/^\/+/, '');
