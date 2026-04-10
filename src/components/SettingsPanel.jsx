@@ -43,6 +43,15 @@ export default function SettingsPanel({ config, onConfigPatch, onOpenDevTools, o
         />
       </label>
 
+      <label className="settings-label">
+        <input
+          type="checkbox"
+          checked={config.wordWrap}
+          onChange={(event) => onConfigPatch({ wordWrap: event.target.checked })}
+        />
+        Word wrap (source)
+      </label>
+
       <div className="theme-toggle">
         <span>Theme</span>
         <div className="theme-toggle-buttons">

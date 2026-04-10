@@ -288,6 +288,15 @@ async function createFolder(parentDir, name) {
   return { path: toNoteRel(fullPath) };
 }
 
+async function movePath(relPath, destRelDir) {
+  const srcFull = resolveInNotes(relPath);
+  const destDirFull = resolveInNotes(destRelDir || '');
+  await fs.mkdir(destDirFull, { recursive: true });
+  const destFull = await uniqueSiblingPath(destDirFull, path.basename(srcFull));
+  await fs.rename(srcFull, destFull);
+  return { path: toNoteRel(destFull) };
+}
+
 async function renamePath(oldRelPath, newName) {
   const oldFullPath = resolveInNotes(oldRelPath);
   const stat = await fs.stat(oldFullPath);
@@ -440,6 +449,10 @@ ipcMain.handle(IPC.PATHS_RENAME, async (_event, payload) => {
   const { oldPath, newName } = payload;
   return renamePath(oldPath, newName);
 });
+ipcMain.handle(IPC.PATHS_MOVE, async (_event, payload) => {
+  const { srcPath, destDir } = payload;
+  return movePath(srcPath, destDir);
+});
 ipcMain.handle(IPC.PATHS_TRASH, async (_event, relPath) => trashPath(relPath));
 ipcMain.handle(IPC.TRASH_LIST, async () => listTrashItems());
 ipcMain.handle(IPC.TRASH_RESTORE, async (_event, trashRelPath) =>
@@ -459,6 +472,38 @@ ipcMain.handle(IPC.SESSION_SET, async (_event, patch) => {
   await writeJson(SESSION_PATH, nextSession);
   return nextSession;
 });
+ipcMain.handle(IPC.APP_POPOUT, (_event, notePath) => {
+  const popout = new BrowserWindow({
+    width: 820,
+    height: 680,
+    minWidth: 480,
+    minHeight: 360,
+    title: notePath ? notePath.split('/').pop() : 'Note',
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  });
+
+  popout.setMenuBarVisibility(false);
+  popout.removeMenu();
+
+  const encoded = encodeURIComponent(notePath || '');
+  const devUrl = process.env.VITE_DEV_SERVER_URL;
+  if (devUrl) {
+    popout.loadURL(`${devUrl}?popout=${encoded}`);
+  } else {
+    popout.loadFile(path.join(__dirname, '..', 'dist', 'index.html'), {
+      query: { popout: notePath || '' }
+    });
+  }
+
+  return { opened: true };
+});
+
 ipcMain.handle(IPC.APP_OPEN_DEVTOOLS, (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win || win.isDestroyed()) {

@@ -9,6 +9,7 @@ const IPC = {
   NOTES_CREATE: 'notes:create',
   FOLDERS_CREATE: 'folders:create',
   PATHS_RENAME: 'paths:rename',
+  PATHS_MOVE: 'paths:move',
   PATHS_TRASH: 'paths:trash',
   TRASH_LIST: 'trash:list',
   TRASH_RESTORE: 'trash:restore',
@@ -17,6 +18,7 @@ const IPC = {
   SESSION_GET: 'session:get',
   SESSION_SET: 'session:set',
   APP_OPEN_DEVTOOLS: 'app:openDevTools',
+  APP_POPOUT: 'app:popout',
   TREE_EVENT: 'tree:event'
 };
 
@@ -27,6 +29,7 @@ contextBridge.exposeInMainWorld('mdnote', {
   createNote: (payload) => ipcRenderer.invoke(IPC.NOTES_CREATE, payload),
   createFolder: (payload) => ipcRenderer.invoke(IPC.FOLDERS_CREATE, payload),
   renamePath: (payload) => ipcRenderer.invoke(IPC.PATHS_RENAME, payload),
+  movePath: (payload) => ipcRenderer.invoke(IPC.PATHS_MOVE, payload),
   trashPath: (relPath) => ipcRenderer.invoke(IPC.PATHS_TRASH, relPath),
   listTrash: () => ipcRenderer.invoke(IPC.TRASH_LIST),
   restoreFromTrash: (trashRelPath) => ipcRenderer.invoke(IPC.TRASH_RESTORE, trashRelPath),
@@ -35,6 +38,7 @@ contextBridge.exposeInMainWorld('mdnote', {
   getSession: () => ipcRenderer.invoke(IPC.SESSION_GET),
   setSession: (patch) => ipcRenderer.invoke(IPC.SESSION_SET, patch),
   openDevTools: () => ipcRenderer.invoke(IPC.APP_OPEN_DEVTOOLS),
+  openPopout: (notePath) => ipcRenderer.invoke(IPC.APP_POPOUT, notePath),
   onTreeEvent: (cb) => {
     const handler = (_event, payload) => cb(payload);
     ipcRenderer.on(IPC.TREE_EVENT, handler);

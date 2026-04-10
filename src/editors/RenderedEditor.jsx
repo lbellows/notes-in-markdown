@@ -5,7 +5,7 @@ import {
   normalizeMarkdownLineEndings
 } from '../lib/markdown';
 
-export default function RenderedEditor({ markdown, onChange }) {
+export default function RenderedEditor({ markdown, onChange, wordWrap = false }) {
   const editorRef = useRef(null);
   const html = useMemo(() => markdownToSanitizedHtml(markdown), [markdown]);
 
@@ -38,6 +38,7 @@ export default function RenderedEditor({ markdown, onChange }) {
         contentEditable
         ref={editorRef}
         suppressContentEditableWarning
+        spellCheck={false}
         onInput={handleInput}
       />
     </div>

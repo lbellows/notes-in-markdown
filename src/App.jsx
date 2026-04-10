@@ -22,8 +22,16 @@ const DEFAULT_CONFIG = {
   autosaveEnabled: true,
   autosaveDelayMs: 1400,
   defaultMode: 'rendered',
-  theme: 'dark'
+  theme: 'dark',
+  sidebarWidth: 228,
+  trashWidth: 280,
+  wordWrap: false
 };
+
+const SIDEBAR_MIN = 140;
+const SIDEBAR_MAX = 480;
+const TRASH_MIN = 180;
+const TRASH_MAX = 520;
 
 function findNodeKind(nodes, targetPath) {
   for (const node of nodes) {
@@ -58,6 +66,7 @@ export default function App() {
   const [expandedPaths, setExpandedPaths] = useState([]);
   const [selectedPath, setSelectedPath] = useState(ROOT_SENTINEL);
   const [tabs, setTabs] = useState([]);
+  const [previewPath, setPreviewPath] = useState(null);
   const [activePath, setActivePath] = useState(null);
   const [docs, setDocs] = useState({});
   const [config, setConfig] = useState(DEFAULT_CONFIG);
@@ -71,10 +80,12 @@ export default function App() {
 
   const docsRef = useRef(docs);
   const tabsRef = useRef(tabs);
+  const previewPathRef = useRef(previewPath);
   const activePathRef = useRef(activePath);
   const configRef = useRef(config);
   const statusTimerRef = useRef(null);
   const autosaveSchedulerRef = useRef(null);
+  const resizingRef = useRef(null); // { kind: 'sidebar'|'trash', startX, startWidth }
 
   useEffect(() => {
     docsRef.current = docs;
@@ -83,6 +94,10 @@ export default function App() {
   useEffect(() => {
     tabsRef.current = tabs;
   }, [tabs]);
+
+  useEffect(() => {
+    previewPathRef.current = previewPath;
+  }, [previewPath]);
 
   useEffect(() => {
     activePathRef.current = activePath;
@@ -95,6 +110,55 @@ export default function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = config.theme || 'dark';
   }, [config.theme]);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--sidebar-width', `${config.sidebarWidth ?? 228}px`);
+  }, [config.sidebarWidth]);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--trash-width', `${config.trashWidth ?? 280}px`);
+  }, [config.trashWidth]);
+
+  const handleResizeMouseDown = useCallback((e, kind) => {
+    e.preventDefault();
+    const startWidth = kind === 'sidebar'
+      ? (configRef.current.sidebarWidth ?? 228)
+      : (configRef.current.trashWidth ?? 280);
+    resizingRef.current = { kind, startX: e.clientX, startWidth };
+
+    const el = e.currentTarget;
+    el.classList.add('dragging');
+    document.body.style.userSelect = 'none';
+
+    const onMouseMove = (me) => {
+      const { kind: k, startX, startWidth: sw } = resizingRef.current;
+      const delta = k === 'sidebar' ? me.clientX - startX : startX - me.clientX;
+      const [min, max] = k === 'sidebar' ? [SIDEBAR_MIN, SIDEBAR_MAX] : [TRASH_MIN, TRASH_MAX];
+      const next = Math.max(min, Math.min(max, sw + delta));
+      document.documentElement.style.setProperty(
+        k === 'sidebar' ? '--sidebar-width' : '--trash-width',
+        `${next}px`
+      );
+      resizingRef.current.liveWidth = next;
+    };
+
+    const onMouseUp = () => {
+      el.classList.remove('dragging');
+      document.body.style.userSelect = '';
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      const { kind: k, liveWidth } = resizingRef.current;
+      resizingRef.current = null;
+      if (liveWidth == null) return;
+      const patch = k === 'sidebar' ? { sidebarWidth: liveWidth } : { trashWidth: liveWidth };
+      void window.mdnote.setConfig(patch).then((nextConfig) => {
+        setConfig({ ...DEFAULT_CONFIG, ...nextConfig });
+      });
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, []);
 
   const showStatus = useCallback((message) => {
     setStatus(message);
@@ -188,21 +252,11 @@ export default function App() {
     return () => autosaveSchedulerRef.current?.cancelAll();
   }, [config.autosaveDelayMs, saveNote]);
 
-  const openNote = useCallback(async (notePath) => {
-    const normalizedPath = normalizeRelativePath(notePath);
-    setSelectedPath(normalizedPath);
-
-    if (tabsRef.current.includes(normalizedPath)) {
-      const previousActive = activePathRef.current;
-      if (previousActive && previousActive !== normalizedPath && configRef.current.autosaveEnabled) {
-        await saveNote(previousActive);
-      }
-      setActivePath(normalizedPath);
+  const loadDocIfNeeded = useCallback(async (normalizedPath) => {
+    if (docsRef.current[normalizedPath]) {
       return;
     }
-
     const loaded = await window.mdnote.readNote(normalizedPath);
-
     setDocs((prev) => ({
       ...prev,
       [normalizedPath]: {
@@ -214,6 +268,65 @@ export default function App() {
         lastSavedAt: loaded.mtimeMs
       }
     }));
+  }, []);
+
+  // Single-click: open as transient preview (occupies slot 0, replaced by next preview)
+  const previewNote = useCallback(async (notePath) => {
+    const normalizedPath = normalizeRelativePath(notePath);
+    setSelectedPath(normalizedPath);
+
+    // Already a permanent tab — just activate it
+    if (tabsRef.current.includes(normalizedPath)) {
+      const previousActive = activePathRef.current;
+      if (previousActive && previousActive !== normalizedPath && configRef.current.autosaveEnabled) {
+        await saveNote(previousActive);
+      }
+      setActivePath(normalizedPath);
+      return;
+    }
+
+    await loadDocIfNeeded(normalizedPath);
+
+    // Drop old preview doc if it wasn't promoted to a permanent tab
+    const oldPreview = previewPathRef.current;
+    if (oldPreview && oldPreview !== normalizedPath && !tabsRef.current.includes(oldPreview)) {
+      setDocs((prev) => {
+        const next = { ...prev };
+        delete next[oldPreview];
+        return next;
+      });
+    }
+
+    const previousActive = activePathRef.current;
+    if (previousActive && previousActive !== normalizedPath && configRef.current.autosaveEnabled) {
+      await saveNote(previousActive);
+    }
+
+    setPreviewPath(normalizedPath);
+    setActivePath(normalizedPath);
+  }, [loadDocIfNeeded, saveNote]);
+
+  // Double-click or explicit open: promote to permanent tab
+  const openNote = useCallback(async (notePath) => {
+    const normalizedPath = normalizeRelativePath(notePath);
+    setSelectedPath(normalizedPath);
+
+    // Already permanent — just activate
+    if (tabsRef.current.includes(normalizedPath)) {
+      const previousActive = activePathRef.current;
+      if (previousActive && previousActive !== normalizedPath && configRef.current.autosaveEnabled) {
+        await saveNote(previousActive);
+      }
+      setActivePath(normalizedPath);
+      return;
+    }
+
+    await loadDocIfNeeded(normalizedPath);
+
+    // If this was the preview, promote it (clear preview slot)
+    if (previewPathRef.current === normalizedPath) {
+      setPreviewPath(null);
+    }
 
     setTabs((prev) => [...prev, normalizedPath]);
 
@@ -223,9 +336,13 @@ export default function App() {
     }
 
     setActivePath(normalizedPath);
-  }, [saveNote]);
+  }, [loadDocIfNeeded, saveNote]);
 
   const closePathFromState = useCallback((targetPath) => {
+    if (previewPathRef.current && isUnderPath(previewPathRef.current, targetPath)) {
+      setPreviewPath(null);
+    }
+
     setTabs((prev) => {
       const filtered = prev.filter((tabPath) => !isUnderPath(tabPath, targetPath));
 
@@ -255,6 +372,10 @@ export default function App() {
   }, [selectedPath]);
 
   const remapPathInState = useCallback((oldPath, newPath) => {
+    if (previewPathRef.current && isUnderPath(previewPathRef.current, oldPath)) {
+      setPreviewPath(replacePathPrefix(previewPathRef.current, oldPath, newPath));
+    }
+
     setTabs((prev) => prev.map((tabPath) => replacePathPrefix(tabPath, oldPath, newPath)));
 
     setDocs((prev) => {
@@ -465,11 +586,25 @@ export default function App() {
   const closeTabNow = (targetPath) => {
     autosaveSchedulerRef.current?.cancel(targetPath);
 
+    const isPreview = previewPathRef.current === targetPath;
+    if (isPreview) {
+      setPreviewPath(null);
+      if (targetPath === activePathRef.current) {
+        setActivePath(tabsRef.current[0] || null);
+      }
+      setDocs((prev) => {
+        const next = { ...prev };
+        delete next[targetPath];
+        return next;
+      });
+      return;
+    }
+
     setTabs((prev) => {
       const idx = prev.indexOf(targetPath);
       const next = prev.filter((tabPath) => tabPath !== targetPath);
       if (targetPath === activePathRef.current) {
-        setActivePath(next[idx] || next[idx - 1] || null);
+        setActivePath(next[idx] || next[idx - 1] || previewPathRef.current || null);
       }
       return next;
     });
@@ -503,19 +638,20 @@ export default function App() {
     });
   };
 
-  const handleRename = () => {
-    if (!selectedPath || selectedPath === ROOT_SENTINEL) {
+  const handleRename = (targetPath) => {
+    const path = targetPath || selectedPath;
+    if (!path || path === ROOT_SENTINEL) {
       return;
     }
 
-    const currentName = selectedPath.split('/').pop() || selectedPath;
+    const currentName = path.split('/').pop() || path;
     setInputDialog({
       type: 'rename',
       title: 'Rename Item',
       label: 'New name',
       confirmLabel: 'Rename',
       initialValue: currentName,
-      oldPath: selectedPath
+      oldPath: path
     });
   };
 
@@ -576,20 +712,26 @@ export default function App() {
     }
   };
 
-  const handleDelete = () => {
-    if (!selectedPath || selectedPath === ROOT_SENTINEL) {
+  const handleDelete = (targetPath, fileCount) => {
+    const path = targetPath || selectedPath;
+    if (!path || path === ROOT_SENTINEL) {
       return;
     }
 
+    const name = path.split('/').pop() || path;
+    const message = fileCount > 0
+      ? `Move "${name}" to trash? This folder contains ${fileCount} file${fileCount === 1 ? '' : 's'}.`
+      : `Move "${name}" to trash?`;
+
     setConfirmDialog({
       title: 'Move to Trash',
-      message: `Move ${selectedPath} to trash?`,
+      message,
       confirmLabel: 'Move',
       onConfirm: async () => {
-        await window.mdnote.trashPath(selectedPath);
-        closePathFromState(selectedPath);
+        await window.mdnote.trashPath(path);
+        closePathFromState(path);
         await Promise.all([refreshTree(), refreshTrash()]);
-        showStatus(`Moved ${selectedPath} to trash`);
+        showStatus(`Moved ${path} to trash`);
       }
     });
   };
@@ -612,6 +754,26 @@ export default function App() {
     setActivePath(nextPath);
   };
 
+  const handleCloseOthers = useCallback((keepPath) => {
+    const allTabs = previewPathRef.current
+      ? [previewPathRef.current, ...tabsRef.current.filter((t) => t !== previewPathRef.current)]
+      : tabsRef.current;
+    for (const p of allTabs) {
+      if (p !== keepPath) {
+        closeTabNow(p);
+      }
+    }
+  }, []);
+
+  const handleCloseAll = useCallback(() => {
+    const allTabs = previewPathRef.current
+      ? [previewPathRef.current, ...tabsRef.current.filter((t) => t !== previewPathRef.current)]
+      : tabsRef.current;
+    for (const p of allTabs) {
+      closeTabNow(p);
+    }
+  }, []);
+
   const handleTabClose = (targetPath) => {
     const doc = docsRef.current[targetPath];
     if (doc?.dirty) {
@@ -630,6 +792,12 @@ export default function App() {
   };
 
   const handleDocChange = (notePath, content) => {
+    // Promote preview to permanent tab on first edit
+    if (previewPathRef.current === notePath && !tabsRef.current.includes(notePath)) {
+      setPreviewPath(null);
+      setTabs((prev) => [...prev, notePath]);
+    }
+
     setDocs((prev) => ({
       ...prev,
       [notePath]: {
@@ -666,6 +834,33 @@ export default function App() {
       autosaveSchedulerRef.current?.cancelAll();
     }
   };
+
+  const handleMove = useCallback(async (srcPath, destDir) => {
+    const result = await window.mdnote.movePath({ srcPath, destDir });
+    remapPathInState(srcPath, result.path);
+    setSelectedPath(result.path);
+    await refreshTree();
+    showStatus(`Moved to ${result.path}`);
+  }, [remapPathInState, refreshTree, showStatus]);
+
+  const handlePopout = useCallback((notePath) => {
+    void window.mdnote.openPopout(notePath);
+  }, []);
+
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault();
+        handlePrint();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handlePrint]);
 
   const handleOpenDevTools = async () => {
     try {
@@ -740,35 +935,54 @@ export default function App() {
   };
 
   return (
-    <div className="app-shell">
+    <div
+      className="app-shell"
+      style={showTrash ? { gridTemplateColumns: 'var(--sidebar-width, 228px) 6px 1fr 6px var(--trash-width, 280px)' } : { gridTemplateColumns: 'var(--sidebar-width, 228px) 6px 1fr' }}
+    >
       <TreeSidebar
         tree={tree}
         expandedPaths={expandedPaths}
         selectedPath={selectedPath}
         onToggleExpand={handleToggleExpand}
         onSelect={setSelectedPath}
+        onPreviewNote={(path) => {
+          void previewNote(path);
+        }}
         onOpenNote={(path) => {
           void openNote(path);
         }}
+        onPopout={handlePopout}
         onCreateNote={handleCreateNote}
         onCreateFolder={handleCreateFolder}
         onRename={handleRename}
         onDelete={handleDelete}
+        onMove={(src, dest) => { void handleMove(src, dest); }}
         onRefresh={() => {
           void refreshTree();
         }}
         selectedPathDisplay={selectedPathDisplay}
       />
 
+      <div
+        className="resize-handle"
+        onMouseDown={(e) => handleResizeMouseDown(e, 'sidebar')}
+        role="separator"
+        aria-label="Resize sidebar"
+      />
+
       <main className="main-pane">
         <TabBar
           tabs={tabs}
+          previewPath={previewPath}
           activePath={activePath}
           docs={docs}
           onSelect={(path) => {
             void handleTabSelect(path);
           }}
           onClose={handleTabClose}
+          onCloseOthers={handleCloseOthers}
+          onCloseAll={handleCloseAll}
+          onPopout={handlePopout}
           onSave={() => {
             if (activePath) {
               void saveNote(activePath, { force: true });
@@ -779,6 +993,7 @@ export default function App() {
           }}
           autosaveEnabled={config.autosaveEnabled}
           onToggleTrash={() => setShowTrash((prev) => !prev)}
+          onPrint={handlePrint}
           settingsOpen={showSettings}
           onToggleSettings={() => setShowSettings((prev) => !prev)}
           activeMode={activeDoc?.mode}
@@ -808,12 +1023,14 @@ export default function App() {
                 <SourceEditor
                   value={activeDoc.content}
                   onChange={(content) => handleDocChange(activePath, content)}
+                  wordWrap={config.wordWrap}
                 />
               )}
               {activeDoc.mode === 'rendered' && (
                 <RenderedEditor
                   markdown={activeDoc.content}
                   onChange={(content) => handleDocChange(activePath, content)}
+                  wordWrap={config.wordWrap}
                 />
               )}
             </Suspense>
@@ -822,6 +1039,15 @@ export default function App() {
 
         <footer className="status-bar">{status}</footer>
       </main>
+
+      {showTrash && (
+        <div
+          className="resize-handle"
+          onMouseDown={(e) => handleResizeMouseDown(e, 'trash')}
+          role="separator"
+          aria-label="Resize trash panel"
+        />
+      )}
 
       <TrashPanel
         items={trashItems}

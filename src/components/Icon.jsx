@@ -120,6 +120,22 @@ export default function Icon({ name, size = 14 }) {
           <path d="M18 6L6 18" />
         </Svg>
       );
+    case 'print':
+      return (
+        <Svg size={size}>
+          <path d="M6 9V2h12v7" />
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+          <path d="M6 14h12v8H6z" />
+        </Svg>
+      );
+    case 'more':
+      return (
+        <Svg size={size}>
+          <circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" />
+          <circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none" />
+        </Svg>
+      );
     default:
       return null;
   }
