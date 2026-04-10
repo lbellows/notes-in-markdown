@@ -104,8 +104,8 @@ describe('App integration', () => {
     fireEvent.doubleClick(noteButton);
 
     expect(await screen.findByRole('button', { name: /Welcome\.md/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'MD' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Src' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'md' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'src' })).toBeTruthy();
   });
 
   it('creates a note using the input modal workflow', async () => {

@@ -167,7 +167,7 @@ export default function TabBar({
               className={activeMode === 'rendered' ? 'active' : ''}
               title="Markdown view"
             >
-              MD
+              md
             </button>
             <button
               type="button"
@@ -175,7 +175,7 @@ export default function TabBar({
               className={activeMode === 'source' ? 'active' : ''}
               title="Source view"
             >
-              Src
+              src
             </button>
           </div>
         )}

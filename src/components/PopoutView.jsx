@@ -101,13 +101,13 @@ export default function PopoutView({ notePath }) {
               onClick={() => setMode('rendered')}
               className={mode === 'rendered' ? 'active' : ''}
               title="Markdown view"
-            >MD</button>
+            >md</button>
             <button
               type="button"
               onClick={() => setMode('source')}
               className={mode === 'source' ? 'active' : ''}
               title="Source view"
-            >Src</button>
+            >src</button>
           </div>
           <button type="button" onClick={() => void save({ force: true })} title="Save (Ctrl+S)">Save</button>
           <button type="button" onClick={() => window.print()} title="Print (Ctrl+P)">Print</button>
