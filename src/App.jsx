@@ -12,7 +12,7 @@ import {
   replacePathPrefix,
   normalizeRelativePath
 } from './lib/pathing';
-import { normalizeMarkdownLineEndings } from './lib/markdown';
+import { normalizeMarkdownLineEndings, markdownToSanitizedHtml } from './lib/markdown';
 
 const ROOT_SENTINEL = '__root__';
 const SourceEditor = React.lazy(() => import('./editors/SourceEditor'));
@@ -848,8 +848,28 @@ export default function App() {
   }, []);
 
   const handlePrint = useCallback(() => {
-    window.print();
-  }, []);
+    if (!activeDoc) return;
+    const body = markdownToSanitizedHtml(activeDoc.content);
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #333; }
+  pre { background: #f5f5f5; padding: 12px; border-radius: 4px; overflow-x: auto; }
+  code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; font-size: 0.9em; }
+  pre code { background: none; padding: 0; }
+  blockquote { border-left: 4px solid #ddd; margin: 0; padding-left: 16px; color: #666; }
+  img { max-width: 100%; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+  th { background: #f5f5f5; }
+</style>
+</head>
+<body>${body}</body>
+</html>`;
+    void window.mdnote.printHtml(html);
+  }, [activeDoc]);
 
   useEffect(() => {
     const onKeyDown = (e) => {

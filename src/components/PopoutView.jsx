@@ -1,6 +1,6 @@
 import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { createAutosaveScheduler } from '../lib/autosave';
-import { normalizeMarkdownLineEndings } from '../lib/markdown';
+import { normalizeMarkdownLineEndings, markdownToSanitizedHtml } from '../lib/markdown';
 
 const SourceEditor = React.lazy(() => import('../editors/SourceEditor'));
 const RenderedEditor = React.lazy(() => import('../editors/RenderedEditor'));
@@ -71,15 +71,38 @@ export default function PopoutView({ notePath }) {
     });
   }, []);
 
+  const handlePrint = useCallback(() => {
+    const body = markdownToSanitizedHtml(contentRef.current);
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #333; }
+  pre { background: #f5f5f5; padding: 12px; border-radius: 4px; overflow-x: auto; }
+  code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; font-size: 0.9em; }
+  pre code { background: none; padding: 0; }
+  blockquote { border-left: 4px solid #ddd; margin: 0; padding-left: 16px; color: #666; }
+  img { max-width: 100%; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+  th { background: #f5f5f5; }
+</style>
+</head>
+<body>${body}</body>
+</html>`;
+    void window.mdnote.printHtml(html);
+  }, [notePath]);
+
   // Ctrl+P to print, Ctrl+S to save
   useEffect(() => {
     const onKey = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'p') { e.preventDefault(); window.print(); }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') { e.preventDefault(); handlePrint(); }
       if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); void save({ force: true }); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [save]);
+  }, [save, handlePrint]);
 
   const handleChange = (next) => {
     const normalized = normalizeMarkdownLineEndings(next);
@@ -110,7 +133,7 @@ export default function PopoutView({ notePath }) {
             >src</button>
           </div>
           <button type="button" onClick={() => void save({ force: true })} title="Save (Ctrl+S)">Save</button>
-          <button type="button" onClick={() => window.print()} title="Print (Ctrl+P)">Print</button>
+          <button type="button" onClick={handlePrint} title="Print (Ctrl+P)">Print</button>
         </div>
         <span className="autosave-pill popout-status">{status}</span>
       </div>

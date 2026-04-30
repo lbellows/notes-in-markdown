@@ -19,6 +19,7 @@ const IPC = {
   SESSION_SET: 'session:set',
   APP_OPEN_DEVTOOLS: 'app:openDevTools',
   APP_POPOUT: 'app:popout',
+  APP_PRINT: 'app:print',
   TREE_EVENT: 'tree:event'
 };
 
@@ -39,6 +40,7 @@ contextBridge.exposeInMainWorld('mdnote', {
   setSession: (patch) => ipcRenderer.invoke(IPC.SESSION_SET, patch),
   openDevTools: () => ipcRenderer.invoke(IPC.APP_OPEN_DEVTOOLS),
   openPopout: (notePath) => ipcRenderer.invoke(IPC.APP_POPOUT, notePath),
+  printHtml: (html) => ipcRenderer.invoke(IPC.APP_PRINT, html),
   onTreeEvent: (cb) => {
     const handler = (_event, payload) => cb(payload);
     ipcRenderer.on(IPC.TREE_EVENT, handler);

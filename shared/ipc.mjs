@@ -15,5 +15,6 @@ export const IPC = {
   SESSION_SET: 'session:set',
   APP_OPEN_DEVTOOLS: 'app:openDevTools',
   APP_POPOUT: 'app:popout',
+  APP_PRINT: 'app:print',
   TREE_EVENT: 'tree:event'
 };

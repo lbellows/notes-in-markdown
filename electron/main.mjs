@@ -504,6 +504,22 @@ ipcMain.handle(IPC.APP_POPOUT, (_event, notePath) => {
   return { opened: true };
 });
 
+ipcMain.handle(IPC.APP_PRINT, (_event, html) => {
+  return new Promise((resolve) => {
+    const win = new BrowserWindow({
+      show: false,
+      webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true }
+    });
+    win.webContents.on('did-finish-load', () => {
+      win.webContents.print({ silent: false, printBackground: false }, (success) => {
+        win.destroy();
+        resolve({ printed: success });
+      });
+    });
+    win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+  });
+});
+
 ipcMain.handle(IPC.APP_OPEN_DEVTOOLS, (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win || win.isDestroyed()) {
