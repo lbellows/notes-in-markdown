@@ -5,7 +5,7 @@ import {
   normalizeMarkdownLineEndings
 } from '../lib/markdown';
 
-export default function RenderedEditor({ markdown, onChange, wordWrap = false }) {
+export default function RenderedEditor({ markdown, onChange }) {
   const editorRef = useRef(null);
   const html = useMemo(() => markdownToSanitizedHtml(markdown), [markdown]);
 

@@ -20,6 +20,8 @@ const IPC = {
   APP_OPEN_DEVTOOLS: 'app:openDevTools',
   APP_POPOUT: 'app:popout',
   APP_PRINT: 'app:print',
+  APP_FLUSH_SAVES: 'app:flushSaves',
+  APP_SAVES_FLUSHED: 'app:savesFlushed',
   TREE_EVENT: 'tree:event'
 };
 
@@ -45,5 +47,11 @@ contextBridge.exposeInMainWorld('mdnote', {
     const handler = (_event, payload) => cb(payload);
     ipcRenderer.on(IPC.TREE_EVENT, handler);
     return () => ipcRenderer.removeListener(IPC.TREE_EVENT, handler);
-  }
+  },
+  onFlushSaves: (cb) => {
+    const handler = () => cb();
+    ipcRenderer.on(IPC.APP_FLUSH_SAVES, handler);
+    return () => ipcRenderer.removeListener(IPC.APP_FLUSH_SAVES, handler);
+  },
+  notifySavesFlushed: () => ipcRenderer.send(IPC.APP_SAVES_FLUSHED)
 });

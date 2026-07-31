@@ -16,6 +16,7 @@ export default function PopoutView({ notePath }) {
   const baseMtimeMsRef = useRef(baseMtimeMs);
   const autosaveSchedulerRef = useRef(null);
   const statusTimerRef = useRef(null);
+  const dirtyRef = useRef(false);
 
   useEffect(() => { contentRef.current = content; }, [content]);
   useEffect(() => { baseMtimeMsRef.current = baseMtimeMs; }, [baseMtimeMs]);
@@ -34,6 +35,7 @@ export default function PopoutView({ notePath }) {
     }
     const result = await window.mdnote.writeNote(payload);
     if (!result.conflict) {
+      dirtyRef.current = false;
       setBaseMtimeMs(result.mtimeMs);
       baseMtimeMsRef.current = result.mtimeMs;
       showStatus('Saved');
@@ -60,6 +62,17 @@ export default function PopoutView({ notePath }) {
       onSave: () => void save()
     });
     return () => autosaveSchedulerRef.current?.cancelAll();
+  }, [save]);
+
+  // Flush unsaved changes when the main process intercepts window close
+  useEffect(() => {
+    const off = window.mdnote.onFlushSaves(async () => {
+      if (dirtyRef.current) {
+        await save().catch(() => {});
+      }
+      window.mdnote.notifySavesFlushed();
+    });
+    return () => off();
   }, [save]);
 
   // Apply theme from config
@@ -108,6 +121,7 @@ export default function PopoutView({ notePath }) {
     const normalized = normalizeMarkdownLineEndings(next);
     setContent(normalized);
     contentRef.current = normalized;
+    dirtyRef.current = true;
     autosaveSchedulerRef.current?.schedule(notePath);
   };
 
@@ -144,7 +158,7 @@ export default function PopoutView({ notePath }) {
             <SourceEditor value={content} onChange={handleChange} wordWrap={wordWrap} />
           )}
           {mode === 'rendered' && (
-            <RenderedEditor markdown={content} onChange={handleChange} wordWrap={wordWrap} />
+            <RenderedEditor markdown={content} onChange={handleChange} />
           )}
         </Suspense>
       </div>

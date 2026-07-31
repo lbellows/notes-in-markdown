@@ -402,6 +402,42 @@ function hideApplicationMenu() {
   Menu.setApplicationMenu(null);
 }
 
+// Hold the window open until the renderer flushes dirty notes to disk,
+// with a timeout so a hung renderer can never block closing.
+function attachSaveFlushOnClose(win) {
+  let flushed = false;
+
+  win.on('close', (event) => {
+    if (flushed) {
+      return;
+    }
+
+    event.preventDefault();
+    flushed = true;
+
+    let timer;
+
+    const finish = () => {
+      clearTimeout(timer);
+      ipcMain.removeListener(IPC.APP_SAVES_FLUSHED, onDone);
+      if (!win.isDestroyed()) {
+        win.destroy();
+      }
+    };
+
+    const onDone = (ipcEvent) => {
+      if (BrowserWindow.fromWebContents(ipcEvent.sender) !== win) {
+        return;
+      }
+      finish();
+    };
+
+    timer = setTimeout(finish, 2000);
+    ipcMain.on(IPC.APP_SAVES_FLUSHED, onDone);
+    win.webContents.send(IPC.APP_FLUSH_SAVES);
+  });
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1300,
@@ -422,6 +458,8 @@ function createWindow() {
     mainWindow.setMenuBarVisibility(false);
     mainWindow.removeMenu();
   }
+
+  attachSaveFlushOnClose(mainWindow);
 
   const devUrl = process.env.VITE_DEV_SERVER_URL;
   if (devUrl) {
@@ -490,6 +528,7 @@ ipcMain.handle(IPC.APP_POPOUT, (_event, notePath) => {
 
   popout.setMenuBarVisibility(false);
   popout.removeMenu();
+  attachSaveFlushOnClose(popout);
 
   const encoded = encodeURIComponent(notePath || '');
   const devUrl = process.env.VITE_DEV_SERVER_URL;

@@ -16,5 +16,7 @@ export const IPC = {
   APP_OPEN_DEVTOOLS: 'app:openDevTools',
   APP_POPOUT: 'app:popout',
   APP_PRINT: 'app:print',
+  APP_FLUSH_SAVES: 'app:flushSaves',
+  APP_SAVES_FLUSHED: 'app:savesFlushed',
   TREE_EVENT: 'tree:event'
 };

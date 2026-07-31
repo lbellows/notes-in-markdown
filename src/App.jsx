@@ -50,6 +50,11 @@ function findNodeKind(nodes, targetPath) {
   return null;
 }
 
+function describeError(error) {
+  return (error?.message || 'Unknown error')
+    .replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
+}
+
 function isUnderPath(candidatePath, rootPath) {
   const candidate = normalizeRelativePath(candidatePath);
   const root = normalizeRelativePath(rootPath);
@@ -85,6 +90,7 @@ export default function App() {
   const configRef = useRef(config);
   const statusTimerRef = useRef(null);
   const autosaveSchedulerRef = useRef(null);
+  const bootstrappedRef = useRef(false);
   const resizingRef = useRef(null); // { kind: 'sidebar'|'trash', startX, startWidth }
 
   useEffect(() => {
@@ -199,7 +205,14 @@ export default function App() {
         payload.expectedMtimeMs = doc.baseMtimeMs;
       }
 
-      const result = await window.mdnote.writeNote(payload);
+      let result;
+      try {
+        result = await window.mdnote.writeNote(payload);
+      } catch (error) {
+        showStatus(`Save failed for ${notePath}: ${describeError(error)}`);
+        return false;
+      }
+
       if (result.conflict) {
         setConflict({
           path: notePath,
@@ -248,6 +261,16 @@ export default function App() {
         void saveNote(notePath);
       }
     });
+
+    // Re-arm saves for docs that were dirty when the scheduler was rebuilt,
+    // so changing the delay can't drop a pending save.
+    if (configRef.current.autosaveEnabled) {
+      for (const [notePath, doc] of Object.entries(docsRef.current)) {
+        if (doc.dirty) {
+          autosaveSchedulerRef.current.schedule(notePath);
+        }
+      }
+    }
 
     return () => autosaveSchedulerRef.current?.cancelAll();
   }, [config.autosaveDelayMs, saveNote]);
@@ -446,6 +469,7 @@ export default function App() {
       }
 
       if (mounted) {
+        bootstrappedRef.current = true;
         setDocs(loadedDocs);
         setTabs(loadedTabs);
         setActivePath(
@@ -464,6 +488,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // Don't persist until the saved session has been restored, otherwise the
+    // initial empty state can overwrite it before bootstrap finishes.
+    if (!bootstrappedRef.current) {
+      return undefined;
+    }
+
     const saveSession = setTimeout(() => {
       void window.mdnote.setSession({
         openTabs: tabs,
@@ -537,19 +567,21 @@ export default function App() {
       }
     };
 
-    const onBeforeUnload = () => {
-      if (configRef.current.autosaveEnabled) {
-        void saveAllDirty();
-      }
-    };
-
     window.addEventListener('blur', onBlur);
-    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('blur', onBlur);
+  }, [saveAllDirty]);
 
-    return () => {
-      window.removeEventListener('blur', onBlur);
-      window.removeEventListener('beforeunload', onBeforeUnload);
-    };
+  // Main process holds the window open on close until we confirm dirty notes
+  // are flushed to disk (beforeunload can't await async IPC).
+  useEffect(() => {
+    const off = window.mdnote.onFlushSaves(async () => {
+      if (configRef.current.autosaveEnabled) {
+        await saveAllDirty();
+      }
+      window.mdnote.notifySavesFlushed();
+    });
+
+    return () => off();
   }, [saveAllDirty]);
 
   const activeDoc = activePath ? docs[activePath] : null;
@@ -668,6 +700,14 @@ export default function App() {
     const dialog = inputDialog;
     setInputDialog(null);
 
+    try {
+      await runInputDialogAction(dialog, value);
+    } catch (error) {
+      showStatus(`${dialog.title} failed: ${describeError(error)}`);
+    }
+  };
+
+  const runInputDialogAction = async (dialog, value) => {
     if (dialog.type === 'create-note') {
       const result = await window.mdnote.createNote({
         parentDir: dialog.parentDir,
@@ -728,21 +768,29 @@ export default function App() {
       message,
       confirmLabel: 'Move',
       onConfirm: async () => {
-        await window.mdnote.trashPath(path);
-        closePathFromState(path);
-        await Promise.all([refreshTree(), refreshTrash()]);
-        showStatus(`Moved ${path} to trash`);
+        try {
+          await window.mdnote.trashPath(path);
+          closePathFromState(path);
+          await Promise.all([refreshTree(), refreshTrash()]);
+          showStatus(`Moved ${path} to trash`);
+        } catch (error) {
+          showStatus(`Trash failed: ${describeError(error)}`);
+        }
       }
     });
   };
 
   const handleRestore = async (trashPath) => {
-    const result = await window.mdnote.restoreFromTrash(trashPath);
-    await Promise.all([refreshTree(), refreshTrash()]);
-    showStatus(`Restored ${result.restoredPath}`);
+    try {
+      const result = await window.mdnote.restoreFromTrash(trashPath);
+      await Promise.all([refreshTree(), refreshTrash()]);
+      showStatus(`Restored ${result.restoredPath}`);
 
-    if (result.restoredPath.endsWith('.md')) {
-      await openNote(result.restoredPath);
+      if (result.restoredPath.endsWith('.md')) {
+        await openNote(result.restoredPath);
+      }
+    } catch (error) {
+      showStatus(`Restore failed: ${describeError(error)}`);
     }
   };
 
@@ -836,11 +884,15 @@ export default function App() {
   };
 
   const handleMove = useCallback(async (srcPath, destDir) => {
-    const result = await window.mdnote.movePath({ srcPath, destDir });
-    remapPathInState(srcPath, result.path);
-    setSelectedPath(result.path);
-    await refreshTree();
-    showStatus(`Moved to ${result.path}`);
+    try {
+      const result = await window.mdnote.movePath({ srcPath, destDir });
+      remapPathInState(srcPath, result.path);
+      setSelectedPath(result.path);
+      await refreshTree();
+      showStatus(`Moved to ${result.path}`);
+    } catch (error) {
+      showStatus(`Move failed: ${describeError(error)}`);
+    }
   }, [remapPathInState, refreshTree, showStatus]);
 
   const handlePopout = useCallback((notePath) => {
@@ -877,10 +929,16 @@ export default function App() {
         e.preventDefault();
         handlePrint();
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (activePathRef.current) {
+          void saveNote(activePathRef.current, { force: true });
+        }
+      }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [handlePrint]);
+  }, [handlePrint, saveNote]);
 
   const handleOpenDevTools = async () => {
     try {
@@ -929,19 +987,23 @@ export default function App() {
     const noteName = conflict.path.split('/').pop()?.replace(/\.md$/i, '') || 'Copy';
     const parentDir = parentDirectoryPath(conflict.path);
 
-    const created = await window.mdnote.createNote({
-      parentDir,
-      title: `${noteName} copy`
-    });
+    try {
+      const created = await window.mdnote.createNote({
+        parentDir,
+        title: `${noteName} copy`
+      });
 
-    await window.mdnote.writeNote({
-      path: created.path,
-      content: conflict.currentContent
-    });
+      await window.mdnote.writeNote({
+        path: created.path,
+        content: conflict.currentContent
+      });
 
-    setConflict(null);
-    await Promise.all([refreshTree(), openNote(created.path)]);
-    showStatus(`Saved a copy to ${created.path}`);
+      setConflict(null);
+      await Promise.all([refreshTree(), openNote(created.path)]);
+      showStatus(`Saved a copy to ${created.path}`);
+    } catch (error) {
+      showStatus(`Save copy failed: ${describeError(error)}`);
+    }
   };
 
   const handleConfirmAccept = async () => {
@@ -1050,7 +1112,6 @@ export default function App() {
                 <RenderedEditor
                   markdown={activeDoc.content}
                   onChange={(content) => handleDocChange(activePath, content)}
-                  wordWrap={config.wordWrap}
                 />
               )}
             </Suspense>

@@ -20,4 +20,21 @@ describe('markdown helpers', () => {
     expect(md).toContain('# Title');
     expect(md).toContain('Body');
   });
+
+  it('renders GFM tables to html', () => {
+    const html = markdownToSanitizedHtml(
+      '| Layer | Updated by |\n| --- | --- |\n| asdf | yay -Syu |'
+    );
+    expect(html).toContain('<table>');
+    expect(html).toContain('<th>Layer</th>');
+    expect(html).toContain('<td>asdf</td>');
+  });
+
+  it('preserves tables through the html-to-markdown round trip', () => {
+    const source = '| Layer | Updated by |\n| --- | --- |\n| asdf | yay -Syu |';
+    const roundTripped = htmlToMarkdown(markdownToSanitizedHtml(source));
+    expect(roundTripped).toContain('| Layer | Updated by |');
+    expect(roundTripped).toContain('| --- | --- |');
+    expect(roundTripped).toContain('| asdf | yay -Syu |');
+  });
 });

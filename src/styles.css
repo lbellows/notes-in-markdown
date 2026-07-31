@@ -465,6 +465,148 @@ button:disabled {
   border-color: var(--accent);
 }
 
+/* Markdown content typography inside the rendered editor */
+.rendered-editor h1,
+.rendered-editor h2,
+.rendered-editor h3,
+.rendered-editor h4,
+.rendered-editor h5,
+.rendered-editor h6 {
+  margin: 1.1em 0 0.45em;
+  line-height: 1.25;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.rendered-editor h1:first-child,
+.rendered-editor h2:first-child,
+.rendered-editor h3:first-child {
+  margin-top: 0;
+}
+
+.rendered-editor h1 {
+  font-size: 1.7em;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.25em;
+}
+
+.rendered-editor h2 {
+  font-size: 1.4em;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.2em;
+}
+
+.rendered-editor h3 {
+  font-size: 1.2em;
+}
+
+.rendered-editor h4 {
+  font-size: 1.05em;
+}
+
+.rendered-editor h5 {
+  font-size: 0.95em;
+}
+
+.rendered-editor h6 {
+  font-size: 0.88em;
+  color: var(--text-muted);
+}
+
+.rendered-editor p {
+  margin: 0.55em 0;
+}
+
+.rendered-editor a {
+  color: var(--accent);
+}
+
+.rendered-editor table {
+  border-collapse: collapse;
+  margin: 0.75em 0;
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.rendered-editor th,
+.rendered-editor td {
+  border: 1px solid var(--border);
+  padding: 0.35em 0.7em;
+  text-align: left;
+}
+
+.rendered-editor th {
+  background: var(--bg-elev);
+  font-weight: 600;
+}
+
+.rendered-editor tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--bg-hover) 45%, transparent);
+}
+
+.rendered-editor code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.9em;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+
+.rendered-editor pre {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.7em 0.9em;
+  margin: 0.75em 0;
+  overflow-x: auto;
+  line-height: 1.45;
+}
+
+.rendered-editor pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.88em;
+}
+
+.rendered-editor blockquote {
+  margin: 0.75em 0;
+  padding: 0.15em 0 0.15em 0.9em;
+  border-left: 3px solid var(--accent);
+  color: var(--text-muted);
+}
+
+.rendered-editor ul,
+.rendered-editor ol {
+  margin: 0.55em 0;
+  padding-left: 1.6em;
+}
+
+.rendered-editor li {
+  margin: 0.2em 0;
+}
+
+.rendered-editor li > ul,
+.rendered-editor li > ol {
+  margin: 0.2em 0;
+}
+
+.rendered-editor input[type='checkbox'] {
+  margin-right: 0.4em;
+}
+
+.rendered-editor hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.2em 0;
+}
+
+.rendered-editor img {
+  max-width: 100%;
+}
+
 .empty-state {
   height: 100%;
   display: grid;

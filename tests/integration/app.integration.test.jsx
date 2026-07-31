@@ -59,6 +59,8 @@ function makeBridge(overrides = {}) {
     setSession: vi.fn().mockResolvedValue({}),
     openDevTools: vi.fn().mockResolvedValue({ opened: true, alreadyOpen: false }),
     onTreeEvent: vi.fn(() => () => {}),
+    onFlushSaves: vi.fn(() => () => {}),
+    notifySavesFlushed: vi.fn(),
     ...overrides
   };
 }
