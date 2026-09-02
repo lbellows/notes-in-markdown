@@ -19,6 +19,27 @@ export function parentDirectoryPath(relPath = '') {
   return normalized.split('/').slice(0, -1).join('/');
 }
 
+export function joinRelativePath(fromDir = '', rel = '') {
+  const parts = [
+    ...normalizeRelativePath(fromDir).split('/'),
+    ...normalizeRelativePath(rel).split('/')
+  ];
+  const out = [];
+
+  for (const part of parts) {
+    if (!part || part === '.') {
+      continue;
+    }
+    if (part === '..') {
+      out.pop();
+      continue;
+    }
+    out.push(part);
+  }
+
+  return out.join('/');
+}
+
 export function replacePathPrefix(targetPath, oldPrefix, newPrefix) {
   const normalizedTarget = normalizeRelativePath(targetPath);
   const normalizedOld = normalizeRelativePath(oldPrefix);
