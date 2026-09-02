@@ -12,20 +12,20 @@ import {
   replacePathPrefix,
   normalizeRelativePath
 } from './lib/pathing';
-import { normalizeMarkdownLineEndings, markdownToSanitizedHtml } from './lib/markdown';
+import { normalizeMarkdownLineEndings, markdownToSanitizedHtml, countMarkdownStats } from './lib/markdown';
 
 const ROOT_SENTINEL = '__root__';
-const SourceEditor = React.lazy(() => import('./editors/SourceEditor'));
-const RenderedEditor = React.lazy(() => import('./editors/RenderedEditor'));
+const NoteWorkspace = React.lazy(() => import('./editors/NoteWorkspace'));
 
 const DEFAULT_CONFIG = {
   autosaveEnabled: true,
   autosaveDelayMs: 1400,
-  defaultMode: 'rendered',
+  defaultMode: 'split',
   theme: 'dark',
   sidebarWidth: 228,
   trashWidth: 280,
-  wordWrap: false
+  wordWrap: true,
+  showOutline: true
 };
 
 const SIDEBAR_MIN = 140;
@@ -82,6 +82,12 @@ export default function App() {
   const [conflict, setConflict] = useState(null);
   const [inputDialog, setInputDialog] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const [cursor, setCursor] = useState({ line: 1, col: 1 });
+  const handleCursorChange = useCallback((next) => {
+    setCursor((prev) =>
+      prev.line === next.line && prev.col === next.col ? prev : next
+    );
+  }, []);
 
   const docsRef = useRef(docs);
   const tabsRef = useRef(tabs);
@@ -935,6 +941,25 @@ export default function App() {
           void saveNote(activePathRef.current, { force: true });
         }
       }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'o') {
+        e.preventDefault();
+        const next = !configRef.current.showOutline;
+        void window.mdnote.setConfig({ showOutline: next }).then((nextConfig) => {
+          setConfig({ ...DEFAULT_CONFIG, ...nextConfig });
+        });
+      }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'v') {
+        e.preventDefault();
+        if (activePathRef.current) {
+          setDocs((prev) => ({
+            ...prev,
+            [activePathRef.current]: {
+              ...prev[activePathRef.current],
+              mode: 'split'
+            }
+          }));
+        }
+      }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
@@ -1080,6 +1105,10 @@ export default function App() {
           onToggleSettings={() => setShowSettings((prev) => !prev)}
           activeMode={activeDoc?.mode}
           onModeChange={handleModeToggle}
+          showOutline={config.showOutline}
+          onToggleOutline={() => {
+            void handleConfigPatch({ showOutline: !config.showOutline });
+          }}
         />
 
         <div className="settings-flyout-row">
@@ -1101,24 +1130,33 @@ export default function App() {
           {!activeDoc && <div className="empty-state">Open a markdown note from the sidebar.</div>}
           {activeDoc && (
             <Suspense fallback={<div className="empty-state">Loading editor...</div>}>
-              {activeDoc.mode === 'source' && (
-                <SourceEditor
-                  value={activeDoc.content}
-                  onChange={(content) => handleDocChange(activePath, content)}
-                  wordWrap={config.wordWrap}
-                />
-              )}
-              {activeDoc.mode === 'rendered' && (
-                <RenderedEditor
-                  markdown={activeDoc.content}
-                  onChange={(content) => handleDocChange(activePath, content)}
-                />
-              )}
+              <NoteWorkspace
+                content={activeDoc.content}
+                mode={activeDoc.mode || config.defaultMode}
+                wordWrap={config.wordWrap}
+                theme={config.theme}
+                showOutline={config.showOutline}
+                notePath={activePath}
+                onChange={(content) => handleDocChange(activePath, content)}
+                onOpenNote={(path) => {
+                  void openNote(path);
+                }}
+                onCursorChange={handleCursorChange}
+              />
             </Suspense>
           )}
         </section>
 
-        <footer className="status-bar">{status}</footer>
+        <footer className="status-bar">
+          <span className="status-message">{status}</span>
+          {activeDoc && (
+            <span className="status-stats">
+              {countMarkdownStats(activeDoc.content).words} words
+              {(activeDoc.mode === 'source' || activeDoc.mode === 'split') &&
+                `  Ln ${cursor.line}, Col ${cursor.col}`}
+            </span>
+          )}
+        </footer>
       </main>
 
       {showTrash && (

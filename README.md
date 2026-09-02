@@ -4,7 +4,9 @@ Desktop markdown note-taking app (Electron + React) with:
 
 - Filesystem-backed hierarchy at `~/.nim/notes`
 - Folder tree + tabbed documents
-- Editable `Rendered` and `Source` modes
+- Markdown-first editing: source, split preview, and rendered views
+- GFM source editing (lists, tasks, tables, fenced-code highlighting)
+- Document outline, in-note find/replace, and formatting shortcuts
 - Toggleable autosave
 - Local conflict handling for external file edits
 - Soft delete to `~/.nim/.trash` with restore
@@ -36,6 +38,15 @@ Then start Electron (loads built renderer from `dist/`):
 ```bash
 npm start
 ```
+
+## Markdown editor
+
+- **src**: CodeMirror source with GFM, nested fenced-code highlighting, list continuation, and formatting shortcuts
+- **split**: source on the left, live preview on the right (new default)
+- **md**: editable rendered view
+- Outline jumps to headings; preview checkboxes write back to the markdown source
+- `Ctrl+F` / `Ctrl+H` find and replace in source
+- `Ctrl+Shift+V` split view, `Ctrl+Shift+O` toggle outline
 
 ## Storage layout
 

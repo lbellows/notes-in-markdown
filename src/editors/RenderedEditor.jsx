@@ -34,7 +34,7 @@ export default function RenderedEditor({ markdown, onChange }) {
   return (
     <div className="editor-panel rendered-shell">
       <div
-        className="rendered-editor"
+        className="rendered-editor md-content"
         contentEditable
         ref={editorRef}
         suppressContentEditableWarning

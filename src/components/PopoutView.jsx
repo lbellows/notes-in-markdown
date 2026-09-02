@@ -2,15 +2,16 @@ import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react
 import { createAutosaveScheduler } from '../lib/autosave';
 import { normalizeMarkdownLineEndings, markdownToSanitizedHtml } from '../lib/markdown';
 
-const SourceEditor = React.lazy(() => import('../editors/SourceEditor'));
-const RenderedEditor = React.lazy(() => import('../editors/RenderedEditor'));
+const NoteWorkspace = React.lazy(() => import('../editors/NoteWorkspace'));
 
 export default function PopoutView({ notePath }) {
   const [content, setContent] = useState('');
   const [mode, setMode] = useState('rendered');
   const [baseMtimeMs, setBaseMtimeMs] = useState(null);
   const [status, setStatus] = useState('Loading…');
-  const [wordWrap, setWordWrap] = useState(false);
+  const [wordWrap, setWordWrap] = useState(true);
+  const [theme, setTheme] = useState('dark');
+  const [showOutline, setShowOutline] = useState(true);
 
   const contentRef = useRef(content);
   const baseMtimeMsRef = useRef(baseMtimeMs);
@@ -79,8 +80,10 @@ export default function PopoutView({ notePath }) {
   useEffect(() => {
     window.mdnote.getConfig().then((cfg) => {
       document.documentElement.dataset.theme = cfg.theme || 'dark';
+      setTheme(cfg.theme || 'dark');
       if (cfg.defaultMode) setMode(cfg.defaultMode);
-      setWordWrap(cfg.wordWrap ?? false);
+      setWordWrap(cfg.wordWrap ?? true);
+      setShowOutline(cfg.showOutline ?? true);
     });
   }, []);
 
@@ -145,6 +148,12 @@ export default function PopoutView({ notePath }) {
               className={mode === 'source' ? 'active' : ''}
               title="Source view"
             >src</button>
+            <button
+              type="button"
+              onClick={() => setMode('split')}
+              className={mode === 'split' ? 'active' : ''}
+              title="Split source and preview"
+            >split</button>
           </div>
           <button type="button" onClick={() => void save({ force: true })} title="Save (Ctrl+S)">Save</button>
           <button type="button" onClick={handlePrint} title="Print (Ctrl+P)">Print</button>
@@ -154,12 +163,15 @@ export default function PopoutView({ notePath }) {
 
       <div className="popout-editor">
         <Suspense fallback={<div className="empty-state">Loading…</div>}>
-          {mode === 'source' && (
-            <SourceEditor value={content} onChange={handleChange} wordWrap={wordWrap} />
-          )}
-          {mode === 'rendered' && (
-            <RenderedEditor markdown={content} onChange={handleChange} />
-          )}
+          <NoteWorkspace
+            content={content}
+            mode={mode}
+            wordWrap={wordWrap}
+            theme={theme}
+            showOutline={showOutline}
+            notePath={notePath}
+            onChange={handleChange}
+          />
         </Suspense>
       </div>
     </div>

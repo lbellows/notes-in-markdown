@@ -32,7 +32,8 @@ export default defineConfig({
           if (
             id.includes('marked') ||
             id.includes('turndown') ||
-            id.includes('dompurify')
+            id.includes('dompurify') ||
+            id.includes('highlight.js')
           ) {
             return 'vendor-markdown';
           }

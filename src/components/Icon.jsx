@@ -136,6 +136,16 @@ export default function Icon({ name, size = 14 }) {
           <circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none" />
         </Svg>
       );
+    case 'outline':
+      return (
+        <Svg size={size}>
+          <path d="M4 6h16" />
+          <path d="M8 12h12" />
+          <path d="M8 18h12" />
+          <path d="M4 12h1" />
+          <path d="M4 18h1" />
+        </Svg>
+      );
     default:
       return null;
   }

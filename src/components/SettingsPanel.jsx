@@ -52,6 +52,42 @@ export default function SettingsPanel({ config, onConfigPatch, onOpenDevTools, o
         Word wrap (source)
       </label>
 
+      <label className="settings-label">
+        <input
+          type="checkbox"
+          checked={config.showOutline}
+          onChange={(event) => onConfigPatch({ showOutline: event.target.checked })}
+        />
+        Document outline
+      </label>
+
+      <div className="theme-toggle">
+        <span>Default view</span>
+        <div className="theme-toggle-buttons">
+          <button
+            type="button"
+            className={config.defaultMode === 'rendered' ? 'active' : ''}
+            onClick={() => onConfigPatch({ defaultMode: 'rendered' })}
+          >
+            md
+          </button>
+          <button
+            type="button"
+            className={config.defaultMode === 'source' ? 'active' : ''}
+            onClick={() => onConfigPatch({ defaultMode: 'source' })}
+          >
+            src
+          </button>
+          <button
+            type="button"
+            className={config.defaultMode === 'split' ? 'active' : ''}
+            onClick={() => onConfigPatch({ defaultMode: 'split' })}
+          >
+            split
+          </button>
+        </div>
+      </div>
+
       <div className="theme-toggle">
         <span>Theme</span>
         <div className="theme-toggle-buttons">

@@ -18,5 +18,6 @@ export const IPC = {
   APP_PRINT: 'app:print',
   APP_FLUSH_SAVES: 'app:flushSaves',
   APP_SAVES_FLUSHED: 'app:savesFlushed',
+  APP_OPEN_EXTERNAL: 'app:openExternal',
   TREE_EVENT: 'tree:event'
 };

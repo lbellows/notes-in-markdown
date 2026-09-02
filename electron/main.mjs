@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, nativeImage } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, shell } from 'electron';
 import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs/promises';
@@ -20,8 +20,10 @@ const SESSION_PATH = path.join(APP_ROOT, 'session.json');
 const DEFAULT_CONFIG = {
   autosaveEnabled: true,
   autosaveDelayMs: 1400,
-  defaultMode: 'rendered',
-  theme: 'dark'
+  defaultMode: 'split',
+  theme: 'dark',
+  wordWrap: true,
+  showOutline: true
 };
 
 const DEFAULT_SESSION = {
@@ -148,7 +150,42 @@ async function ensureAppStorage() {
   if (entries.length === 0) {
     await fs.writeFile(
       path.join(NOTES_ROOT, 'Welcome.md'),
-      '# Welcome\n\nStart writing your notes here.',
+      [
+        '# Welcome',
+        '',
+        'Write in **source**, preview in **split**, or edit the rendered view.',
+        'Split is the default: markdown on the left, live preview on the right.',
+        '',
+        '## Shortcuts',
+        '',
+        '- `Ctrl+B` / `Ctrl+I` / `Ctrl+E` — bold, italic, inline code',
+        '- `Ctrl+Shift+S` — strikethrough',
+        '- `Ctrl+K` — link',
+        '- `Ctrl+Shift+8` / `Ctrl+Shift+7` / `Ctrl+Shift+9` — list, numbered list, task',
+        '- `Ctrl+Alt+1`–`6` — heading level (`Ctrl+Alt+0` removes it)',
+        '- `Ctrl+F` / `Ctrl+H` — find and replace in the current note',
+        '- `Ctrl+Shift+V` — split view',
+        '- `Ctrl+Shift+O` — toggle outline',
+        '',
+        '## Tasks',
+        '',
+        '- [ ] Click a checkbox in preview to toggle it',
+        '- [x] Tables, fenced code, and GFM are first-class',
+        '',
+        '## Example',
+        '',
+        '| Feature | Works in |',
+        '| --- | --- |',
+        '| Headings | Outline + preview |',
+        '| Fenced code | Source + preview |',
+        '',
+        '```js',
+        'function greet(name) {',
+        '  return `Hello, ${name}`;',
+        '}',
+        '```',
+        ''
+      ].join('\n'),
       'utf8'
     );
   }
@@ -557,6 +594,14 @@ ipcMain.handle(IPC.APP_PRINT, (_event, html) => {
     });
     win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
   });
+});
+
+ipcMain.handle(IPC.APP_OPEN_EXTERNAL, async (_event, url) => {
+  if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
+    throw new Error('Only http(s) URLs can be opened.');
+  }
+  await shell.openExternal(url);
+  return { opened: true };
 });
 
 ipcMain.handle(IPC.APP_OPEN_DEVTOOLS, (event) => {

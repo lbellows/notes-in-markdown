@@ -22,6 +22,10 @@ vi.mock('../../src/editors/RenderedEditor', () => ({
   )
 }));
 
+vi.mock('../../src/editors/PreviewPane', () => ({
+  default: ({ markdown }) => <div aria-label="preview-pane">{markdown}</div>
+}));
+
 function makeBridge(overrides = {}) {
   return {
     listTree: vi.fn().mockResolvedValue([
@@ -108,6 +112,8 @@ describe('App integration', () => {
     expect(await screen.findByRole('button', { name: /Welcome\.md/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'md' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'src' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'split' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Outline' })).toBeTruthy();
   });
 
   it('creates a note using the input modal workflow', async () => {

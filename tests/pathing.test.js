@@ -1,4 +1,5 @@
 import {
+  joinRelativePath,
   normalizeRelativePath,
   parentDirectoryPath,
   replacePathPrefix
@@ -20,4 +21,11 @@ describe('pathing helpers', () => {
     expect(replacePathPrefix('old/folder/a.md', 'old/folder', 'new/folder')).toBe('new/folder/a.md');
     expect(replacePathPrefix('other/file.md', 'old/folder', 'new/folder')).toBe('other/file.md');
   });
+
+  it('joins relative paths with parent segments', () => {
+    expect(joinRelativePath('projects/app', '../inbox/todo.md')).toBe('projects/inbox/todo.md');
+    expect(joinRelativePath('', 'Welcome.md')).toBe('Welcome.md');
+    expect(joinRelativePath('a/b', './c.md')).toBe('a/b/c.md');
+  });
 });
+

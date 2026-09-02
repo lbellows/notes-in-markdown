@@ -94,7 +94,9 @@ export default function TabBar({
   settingsOpen,
   activeMode,
   onModeChange,
-  onPrint
+  onPrint,
+  showOutline,
+  onToggleOutline
 }) {
   const [ctxMenu, setCtxMenu] = useState(null);
   const [showMore, setShowMore] = useState(false);
@@ -177,6 +179,20 @@ export default function TabBar({
             >
               src
             </button>
+            <button
+              type="button"
+              onClick={() => onModeChange('split')}
+              className={activeMode === 'split' ? 'active' : ''}
+              title="Split source and preview (Ctrl+Shift+V)"
+            >
+              split
+            </button>
+            <IconButton
+              label="Outline"
+              icon="outline"
+              onClick={onToggleOutline}
+              active={showOutline}
+            />
           </div>
         )}
 

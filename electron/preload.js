@@ -22,6 +22,7 @@ const IPC = {
   APP_PRINT: 'app:print',
   APP_FLUSH_SAVES: 'app:flushSaves',
   APP_SAVES_FLUSHED: 'app:savesFlushed',
+  APP_OPEN_EXTERNAL: 'app:openExternal',
   TREE_EVENT: 'tree:event'
 };
 
@@ -43,6 +44,7 @@ contextBridge.exposeInMainWorld('mdnote', {
   openDevTools: () => ipcRenderer.invoke(IPC.APP_OPEN_DEVTOOLS),
   openPopout: (notePath) => ipcRenderer.invoke(IPC.APP_POPOUT, notePath),
   printHtml: (html) => ipcRenderer.invoke(IPC.APP_PRINT, html),
+  openExternal: (url) => ipcRenderer.invoke(IPC.APP_OPEN_EXTERNAL, url),
   onTreeEvent: (cb) => {
     const handler = (_event, payload) => cb(payload);
     ipcRenderer.on(IPC.TREE_EVENT, handler);
