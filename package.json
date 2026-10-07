@@ -103,6 +103,26 @@
     "portable": {
       "artifactName": "${productName}-${version}-win-${arch}-portable.${ext}"
     },
+    "pacman": {
+      "artifactName": "${name}-${version}-linux-${arch}.${ext}",
+      "depends": [
+        "gtk3",
+        "nss",
+        "alsa-lib",
+        "at-spi2-core",
+        "libcups",
+        "libxcomposite",
+        "libxdamage",
+        "libxrandr",
+        "libxkbcommon",
+        "mesa",
+        "xdg-utils"
+      ],
+      "fpm": [
+        "--description",
+        "Cross-platform markdown notes with hierarchy, tabs, and local autosave."
+      ]
+    },
     "mac": {
       "target": [
         "dmg",

@@ -60,6 +60,18 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: npx electron-builder@latest --linux --publish never
 
+      # pacman repo index, served from releases/latest/download. repo-add
+      # leaves .db/.files as symlinks, so swap them for real files to upload.
+      - name: Build pacman repo database
+        if: ${{ matrix.target == 'linux' && (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch') }}
+        run: |
+          docker run --rm -v "$PWD/release:/repo" -w /repo archlinux:latest \
+            bash -c 'repo-add notes-in-markdown.db.tar.gz *.pacman && chown -R '"$(id -u):$(id -g)"' /repo'
+          cd release
+          for db in notes-in-markdown.db notes-in-markdown.files; do
+            cp --remove-destination "$(readlink "$db")" "$db"
+          done
+
       - name: Publish Windows artifacts
         if: ${{ matrix.target == 'win' && (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch') }}
         env:
@@ -81,6 +93,8 @@ jobs:
             release/**/*.AppImage
             release/**/*.deb
             release/**/*.pacman
+            release/notes-in-markdown.db
+            release/notes-in-markdown.files
             release/**/*-win-*.exe
             release/**/*.dmg
             release/**/*-mac-*.zip
