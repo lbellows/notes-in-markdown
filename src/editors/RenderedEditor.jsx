@@ -1,13 +1,28 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import {
   htmlToMarkdown,
   markdownToSanitizedHtml,
   normalizeMarkdownLineEndings
 } from '../lib/markdown';
+import { renderedCommands } from '../lib/rendered-commands';
 
-export default function RenderedEditor({ markdown, onChange }) {
+const RenderedEditor = forwardRef(function RenderedEditor({ markdown, onChange }, ref) {
   const editorRef = useRef(null);
   const html = useMemo(() => markdownToSanitizedHtml(markdown), [markdown]);
+
+  useImperativeHandle(ref, () => ({
+    runCommand(name) {
+      const root = editorRef.current;
+      if (!root || !renderedCommands[name]) {
+        return;
+      }
+      if (document.activeElement !== root) {
+        root.focus();
+      }
+      // execCommand fires an input event, which syncs the markdown via handleInput.
+      renderedCommands[name](root);
+    }
+  }));
 
   useEffect(() => {
     if (!editorRef.current) {
@@ -43,4 +58,6 @@ export default function RenderedEditor({ markdown, onChange }) {
       />
     </div>
   );
-}
+});
+
+export default RenderedEditor;

@@ -57,7 +57,28 @@ export function applyHeadingToLine(line, level) {
   return `${'#'.repeat(Math.min(6, level))} ${content}`;
 }
 
-const UL_RE = /^(\s*)([-*+])\s+(?:\[([ xX])\]\s+)?(.*)$/;
+export function headingLevelOf(line) {
+  const match = /^\s{0,3}(#{1,6})\s/.exec(line || '');
+  return match ? match[1].length : 0;
+}
+
+// Bigger heading = smaller level number. A plain line grows straight to H3,
+// and shrinking past H6 drops back to a plain line.
+export function nextHeadingLevel(level, delta) {
+  if (delta > 0) {
+    return level === 0 ? 3 : Math.max(1, level - 1);
+  }
+  if (level === 0) {
+    return 0;
+  }
+  return level >= 6 ? 0 : level + 1;
+}
+
+export function shiftHeadingLine(line, delta) {
+  return applyHeadingToLine(line, nextHeadingLevel(headingLevelOf(line), delta));
+}
+
+const UL_RE =/^(\s*)([-*+])\s+(?:\[([ xX])\]\s+)?(.*)$/;
 const OL_RE = /^(\s*)(\d+)\.\s+(.*)$/;
 
 function indentOf(line) {

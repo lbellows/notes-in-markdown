@@ -1,6 +1,7 @@
 import {
   applyHeadingToLine,
   insertLink,
+  shiftHeadingLine,
   toggleBulletLine,
   toggleOrderedLine,
   toggleQuoteLine,
@@ -64,5 +65,14 @@ describe('markdown commands', () => {
       from: 1,
       to: 5
     });
+  });
+
+  it('steps heading size up and down', () => {
+    expect(shiftHeadingLine('Title', 1)).toBe('### Title');
+    expect(shiftHeadingLine('### Title', 1)).toBe('## Title');
+    expect(shiftHeadingLine('# Title', 1)).toBe('# Title');
+    expect(shiftHeadingLine('## Title', -1)).toBe('### Title');
+    expect(shiftHeadingLine('###### Title', -1)).toBe('Title');
+    expect(shiftHeadingLine('Title', -1)).toBe('Title');
   });
 });

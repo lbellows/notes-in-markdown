@@ -431,6 +431,52 @@ button:disabled {
   grid-template-columns: 200px 1fr;
 }
 
+.note-main-column {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.format-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elev-2);
+}
+
+.format-group {
+  display: flex;
+  gap: 2px;
+}
+
+.format-group + .format-group {
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--border);
+}
+
+.format-btn {
+  min-width: 26px;
+  height: 22px;
+  padding: 0 0.4rem;
+  font-size: 12px;
+  line-height: 1;
+  border-radius: 4px;
+  background: var(--bg-elev);
+}
+
+.format-btn:hover {
+  background: var(--bg-hover);
+}
+
+.format-bold { font-weight: 700; }
+.format-italic { font-style: italic; }
+.format-strike { text-decoration: line-through; }
+
 .note-editor-main {
   position: relative;
   min-width: 0;
@@ -527,6 +573,7 @@ button:disabled {
   min-height: 0;
 }
 
+.editor-panel .source-cm,
 .editor-panel .cm-editor,
 .editor-panel .cm-scroller {
   height: 100%;

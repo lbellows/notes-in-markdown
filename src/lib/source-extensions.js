@@ -17,6 +17,7 @@ import { Prec } from '@codemirror/state';
 import {
   applyHeadingToLine,
   insertLink,
+  shiftHeadingLine,
   toggleBulletLine,
   toggleOrderedLine,
   toggleQuoteLine,
@@ -167,16 +168,33 @@ function insertLinkCommand(view) {
   return dispatchReplacement(view, result.text, result.from, result.to);
 }
 
+// Shared by the keymap and the formatting toolbar.
+export const sourceCommands = {
+  bold: wrapCommand('**'),
+  italic: wrapCommand('_'),
+  code: wrapCommand('`'),
+  strike: wrapCommand('~~'),
+  link: insertLinkCommand,
+  bulletList: (view) => mapSelectedLines(view, toggleBulletLine),
+  orderedList: (view) => mapSelectedLines(view, toggleOrderedLine),
+  taskList: (view) => mapSelectedLines(view, toggleTaskLine),
+  quote: (view) => mapSelectedLines(view, toggleQuoteLine),
+  headingUp: (view) => mapSelectedLines(view, (line) => shiftHeadingLine(line, 1)),
+  headingDown: (view) => mapSelectedLines(view, (line) => shiftHeadingLine(line, -1))
+};
+
 const markdownFormatKeymap = [
-  { key: 'Mod-b', run: wrapCommand('**') },
-  { key: 'Mod-i', run: wrapCommand('_') },
-  { key: 'Mod-e', run: wrapCommand('`') },
-  { key: 'Mod-Shift-s', run: wrapCommand('~~') },
-  { key: 'Mod-k', run: insertLinkCommand },
-  { key: 'Mod-Shift-8', run: (view) => mapSelectedLines(view, toggleBulletLine) },
-  { key: 'Mod-Shift-7', run: (view) => mapSelectedLines(view, toggleOrderedLine) },
-  { key: 'Mod-Shift-9', run: (view) => mapSelectedLines(view, toggleTaskLine) },
-  { key: 'Mod-Shift-.', run: (view) => mapSelectedLines(view, toggleQuoteLine) },
+  { key: 'Mod-b', run: sourceCommands.bold },
+  { key: 'Mod-i', run: sourceCommands.italic },
+  { key: 'Mod-e', run: sourceCommands.code },
+  { key: 'Mod-Shift-s', run: sourceCommands.strike },
+  { key: 'Mod-k', run: sourceCommands.link },
+  { key: 'Mod-Shift-8', run: sourceCommands.bulletList },
+  { key: 'Mod-Shift-7', run: sourceCommands.orderedList },
+  { key: 'Mod-Shift-9', run: sourceCommands.taskList },
+  { key: 'Mod-Shift-.', run: sourceCommands.quote },
+  { key: 'Mod-Alt-=', run: sourceCommands.headingUp },
+  { key: 'Mod-Alt--', run: sourceCommands.headingDown },
   { key: 'Mod-Alt-0', run: headingCommand(0) },
   { key: 'Mod-Alt-1', run: headingCommand(1) },
   { key: 'Mod-Alt-2', run: headingCommand(2) },

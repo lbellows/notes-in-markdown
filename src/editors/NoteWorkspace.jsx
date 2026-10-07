@@ -1,5 +1,6 @@
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import OutlinePanel from '../components/OutlinePanel';
+import FormatToolbar from '../components/FormatToolbar';
 import {
   extractHeadings,
   toggleTaskAtIndex
@@ -23,6 +24,7 @@ export default function NoteWorkspace({
   const sourceRef = useRef(null);
   const previewRef = useRef(null);
   const renderedRef = useRef(null);
+  const renderedEditorRef = useRef(null);
   const syncingRef = useRef(null);
   const sourceScrollerRef = useRef(null);
   const headings = useMemo(() => extractHeadings(content), [content]);
@@ -125,6 +127,15 @@ export default function NoteWorkspace({
   const showSource = mode === 'source' || mode === 'split';
   const showPreview = mode === 'split';
   const showRendered = mode === 'rendered' || !showSource;
+  const commandTarget = showSource ? 'source' : 'rendered';
+
+  const handleFormatCommand = useCallback(
+    (name) => {
+      const target = commandTarget === 'source' ? sourceRef.current : renderedEditorRef.current;
+      target?.runCommand(name);
+    },
+    [commandTarget]
+  );
 
   return (
     <div className={`note-workspace${showOutline ? ' has-outline' : ''}${mode === 'split' ? ' is-split' : ''}`}>
@@ -136,40 +147,43 @@ export default function NoteWorkspace({
         />
       )}
 
-      <div className={`note-editor-main${mode === 'split' ? ' split' : ''}`}>
-        {showSource && (
-          <Suspense fallback={<div className="empty-state">Loading editor...</div>}>
-            <SourceEditor
-              ref={sourceRef}
-              value={content}
-              onChange={onChange}
-              wordWrap={wordWrap}
-              theme={theme}
-              onCursorChange={handleCursorChange}
-              onEditorReady={handleEditorReady}
-            />
-          </Suspense>
-        )}
-        {showPreview && (
-          <Suspense fallback={<div className="empty-state">Loading preview...</div>}>
-            <div ref={previewRef} className="preview-host">
-              <PreviewPane
-                markdown={content}
-                notePath={notePath}
-                onToggleTask={handleToggleTask}
-                onOpenNote={onOpenNote}
-                onScroll={handlePreviewScroll}
+      <div className="note-main-column">
+        <FormatToolbar target={commandTarget} onCommand={handleFormatCommand} />
+        <div className={`note-editor-main${mode === 'split' ? ' split' : ''}`}>
+          {showSource && (
+            <Suspense fallback={<div className="empty-state">Loading editor...</div>}>
+              <SourceEditor
+                ref={sourceRef}
+                value={content}
+                onChange={onChange}
+                wordWrap={wordWrap}
+                theme={theme}
+                onCursorChange={handleCursorChange}
+                onEditorReady={handleEditorReady}
               />
-            </div>
-          </Suspense>
-        )}
-        {showRendered && (
-          <Suspense fallback={<div className="empty-state">Loading editor...</div>}>
-            <div ref={renderedRef} className="rendered-host">
-              <RenderedEditor markdown={content} onChange={onChange} />
-            </div>
-          </Suspense>
-        )}
+            </Suspense>
+          )}
+          {showPreview && (
+            <Suspense fallback={<div className="empty-state">Loading preview...</div>}>
+              <div ref={previewRef} className="preview-host">
+                <PreviewPane
+                  markdown={content}
+                  notePath={notePath}
+                  onToggleTask={handleToggleTask}
+                  onOpenNote={onOpenNote}
+                  onScroll={handlePreviewScroll}
+                />
+              </div>
+            </Suspense>
+          )}
+          {showRendered && (
+            <Suspense fallback={<div className="empty-state">Loading editor...</div>}>
+              <div ref={renderedRef} className="rendered-host">
+                <RenderedEditor ref={renderedEditorRef} markdown={content} onChange={onChange} />
+              </div>
+            </Suspense>
+          )}
+        </div>
       </div>
     </div>
   );

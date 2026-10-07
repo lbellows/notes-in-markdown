@@ -1,6 +1,6 @@
 import React, { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import CodeMirror, { EditorView } from '@uiw/react-codemirror';
-import { createMarkdownExtensions } from '../lib/source-extensions';
+import { createMarkdownExtensions, sourceCommands } from '../lib/source-extensions';
 
 const SourceEditor = forwardRef(function SourceEditor(
   { value, onChange, wordWrap = false, theme = 'dark', onCursorChange, onEditorReady },
@@ -32,6 +32,14 @@ const SourceEditor = forwardRef(function SourceEditor(
     },
     getView() {
       return cmRef.current?.view || null;
+    },
+    runCommand(name) {
+      const view = cmRef.current?.view;
+      if (!view || !sourceCommands[name]) {
+        return;
+      }
+      sourceCommands[name](view);
+      view.focus();
     }
   }));
 
@@ -39,6 +47,7 @@ const SourceEditor = forwardRef(function SourceEditor(
     <div className="editor-panel">
       <CodeMirror
         ref={cmRef}
+        className="source-cm"
         value={value}
         height="100%"
         theme={theme === 'light' ? 'light' : 'dark'}
