@@ -20,7 +20,7 @@
     "test:e2e": "npm run build && playwright test",
     "test:e2e:ci": "xvfb-run -a npm run test:e2e",
     "test:all": "npm run test && npm run test:e2e",
-    "package:linux": "npm run build && npx electron-builder@latest --linux AppImage deb --publish never",
+    "package:linux": "npm run build && npx electron-builder@latest --linux AppImage deb pacman --publish never",
     "package:win": "npm run build && npx electron-builder@latest --win nsis --publish never",
     "package:mac": "npm run build && npx electron-builder@latest --mac dmg zip --publish never"
   },
@@ -75,7 +75,8 @@
     "linux": {
       "target": [
         "AppImage",
-        "deb"
+        "deb",
+        "pacman"
       ],
       "maintainer": "me@lbellows.com",
       "category": "Utility",

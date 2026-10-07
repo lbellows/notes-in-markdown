@@ -76,6 +76,7 @@ jobs:
           files: |
             release/**/*.AppImage
             release/**/*.deb
+            release/**/*.pacman
             release/**/*-win-*.exe
             release/**/*.dmg
             release/**/*-mac-*.zip
