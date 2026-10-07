@@ -49,6 +49,10 @@ jobs:
       - name: Build renderer
         run: npm run build
 
+      - name: Install bsdtar for pacman packaging
+        if: ${{ matrix.target == 'linux' }}
+        run: sudo apt-get update && sudo apt-get install -y libarchive-tools
+
       - name: Publish Linux artifacts
         if: ${{ matrix.target == 'linux' && (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch') }}
         env:
